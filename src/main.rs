@@ -4,8 +4,12 @@ use byteorder::{NetworkEndian, ReadBytesExt};
 use std::time::Instant;
 use std::io::{Seek, SeekFrom};
 
+// mod message;
+// mod orderbook;
 mod messages;
+
 use messages::{
+    Message,
     TimeMessage,
     SystemMessage,
     StockDirectoryMessage,
@@ -98,10 +102,11 @@ fn main() {
     // loop {
         let message_size = parser.get_next_message_size();
         let message_type = parser.get_next_message_type();
+        // TODO: use enum instead of char for message type matching
         match message_type {
             'T' => {
                 time_msg.set_position(parser.cursor.position());
-                seconds = time_msg.get_seconds(&mut parser).unwrap();
+                seconds = time_msg.seconds(&mut parser).unwrap();
                 if seconds % 1800 == 0 {
                     println!("The time is: {}", seconds);
                 }
@@ -109,7 +114,7 @@ fn main() {
             },
             'S' => {
                 system_msg.set_position(parser.cursor.position());
-                let event_code = char::from(system_msg.get_event_code(&mut parser).unwrap());
+                let event_code = char::from(system_msg.event_code(&mut parser).unwrap());
                 println!("System event: {}", event_code);
                 system_msg.skip(&mut parser);
             },

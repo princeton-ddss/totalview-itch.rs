@@ -46,9 +46,9 @@ enum RegSHOActionCode {
 #[derive(EnumString)]
 pub enum Side {
     #[strum(serialize = "B")]
-    Buy, // "B"
+    Buy,
     #[strum(serialize = "S")]
-    Sell, // "S"
+    Sell,
 }
 
 pub trait Message {

@@ -4,6 +4,7 @@ use crate::Parser;
 use byteorder::{NetworkEndian, ReadBytesExt};
 
 pub trait Message {
+
     fn len(&self) -> u64;
 
     fn pos(&self) -> u64;
@@ -25,21 +26,30 @@ impl TimeMessage {
         Self { pos: 0 }
     }
 
-    pub fn len(&self) -> u64 {
+    pub fn seconds(&self, parser: &mut Parser) -> Result<u32, Error> {
+        parser.cursor.read_u32::<NetworkEndian>()
+    }
+}
+
+impl Message for TimeMessage {
+
+    fn len(&self) -> u64 {
         4
     }
 
-    pub fn skip(&self, parser: &mut Parser) {
+    fn pos(&self) -> u64 {
+        return self.pos
+    }
+
+    fn skip(&self, parser: &mut Parser) {
         parser.cursor.set_position(self.pos + self.len());
     }
 
-    pub fn set_position(&mut self, pos: u64) {
+    fn set_position(&mut self, pos: u64) {
         self.pos = pos;
     }
 
-    pub fn get_seconds(&self, parser: &mut Parser) -> Result<u32, Error> {
-        parser.cursor.read_u32::<NetworkEndian>()
-    }
+
 }
 
 pub struct SystemMessage {
@@ -52,26 +62,28 @@ impl SystemMessage {
         Self { pos: 0 }
     }
 
-    pub fn len(&self) -> u64 {
-        5
-    }
-
-    pub fn skip(&self, parser: &mut Parser) {
-        parser.cursor.set_position(self.pos + self.len());
-    }
-
-    pub fn set_position(&mut self, pos: u64) {
-        self.pos = pos;
-    }
-
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> Result<u32, Error> {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> Result<u32, Error> {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>()
     }
 
-    pub fn get_event_code(&self, parser: &mut Parser) -> Result<u8, Error> {
+    pub fn event_code(&self, parser: &mut Parser) -> Result<u8, Error> {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u8()
+    }
+}
+
+impl Message for SystemMessage {
+    fn len(&self) -> u64 {
+        5
+    }
+
+    fn pos(&self) -> u64 {
+        return self.pos
+    }
+
+    fn set_position(&mut self, pos: u64) {
+        self.pos = pos;
     }
 }
 
@@ -84,48 +96,50 @@ impl StockDirectoryMessage {
         Self { pos: 0 }
     }
 
-    pub fn len(&self) -> u64 {
-        19
-    }
-
-    pub fn skip(&self, parser: &mut Parser) {
-        parser.cursor.set_position(self.pos + self.len());
-    }
-
-    pub fn set_position(&mut self, pos: u64) {
-        self.pos = pos;
-    }
-
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
 
-    pub fn get_ticker(&self, parser: &mut Parser) -> String {
+    pub fn ticker(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4);
         parser.read_string(8)
     }
 
-    pub fn get_market_category(&self, parser: &mut Parser) -> char {
+    pub fn market_category(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8);
         char::from(parser.cursor.read_u8().unwrap())
     }
 
-    pub fn get_financial_status_indicator(&self, parser: &mut Parser) -> char {
+    pub fn financial_status_indicator(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8 + 1);
         char::from(parser.cursor.read_u8().unwrap())
     }
 
-    pub fn get_round_lot_size(&self, parser: &mut Parser) -> u32 {
+    pub fn round_lot_size(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 1);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
 
-    pub fn get_round_lots_only(&self, parser: &mut Parser) -> char {
+    pub fn round_lots_only(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 1 + 4);
         char::from(parser.cursor.read_u8().unwrap())
     }
 
+}
+
+impl Message for StockDirectoryMessage {
+    fn len(&self) -> u64 {
+        19
+    }
+
+    fn pos(&self) -> u64 {
+        return self.pos
+    }
+
+    fn set_position(&mut self, pos: u64) {
+        self.pos = pos;
+    }
 }
 
 pub struct StockTradingActionMessage {
@@ -137,37 +151,39 @@ impl StockTradingActionMessage {
         Self { pos: 0 }
     }
 
-    pub fn len(&self) -> u64 {
-        18
-    }
-
-    pub fn skip(&self, parser: &mut Parser) {
-        parser.cursor.set_position(self.pos + self.len());
-    }
-    
-    pub fn set_position(&mut self, pos: u64) {
-        self.pos = pos;
-    }
-
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
-    pub fn get_ticker(&self, parser: &mut Parser) -> String {
+    pub fn ticker(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4);
         parser.read_string(8)
     }
-    pub fn get_trading_state(&self, parser: &mut Parser) -> char {
+    pub fn trading_state(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8);
         char::from(parser.cursor.read_u8().unwrap())
     }
-    pub fn get_reserved(&self, parser: &mut Parser) -> char {
+    pub fn reserved(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8 + 1);
         char::from(parser.cursor.read_u8().unwrap())
     }
-    pub fn get_reason(&self, parser: &mut Parser) -> String {
+    pub fn reason(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 1);
         parser.read_string(4)
+    }
+}
+
+impl Message for StockTradingActionMessage {
+    fn len(&self) -> u64 {
+        18
+    }
+
+    fn pos(&self) -> u64 {
+        self.pos
+    }
+    
+    fn set_position(&mut self, pos: u64) {
+        self.pos = pos;
     }
 }
 
@@ -180,31 +196,33 @@ impl RegSHOMessage {
         Self { pos: 0 }
     }
 
-    pub fn len(&self) -> u64 {
-        13
-    }
-
-    pub fn skip(&self, parser: &mut Parser) {
-        parser.cursor.set_position(self.pos + self.len());
-    }
-    
-    pub fn set_position(&mut self, pos: u64) {
-        self.pos = pos;
-    }
-
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
 
-    pub fn get_ticker(&self, parser: &mut Parser) -> String {
+    pub fn ticker(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4);
         parser.read_string(8)
     }
 
-    pub fn get_reg_sho_action(&self, parser: &mut Parser) -> char {
+    pub fn reg_sho_action(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8);
         char::from(parser.cursor.read_u8().unwrap())
+    }
+}
+
+impl Message for RegSHOMessage {
+    fn len(&self) -> u64 {
+        13
+    }
+
+    fn pos(&self) -> u64 {
+        self.pos
+    }
+    
+    fn set_position(&mut self, pos: u64) {
+        self.pos = pos;
     }
 }
 
@@ -217,46 +235,47 @@ impl MarketParticipantMessage {
         Self { pos: 0 }
     }
 
-    pub fn len(&self) -> u64 {
-        19
-    }
-
-    pub fn skip(&self, parser: &mut Parser) {
-        parser.cursor.set_position(self.pos + self.len());
-    }
-    
-    pub fn set_position(&mut self, pos: u64) {
-        self.pos = pos;
-    }
-
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
 
-    pub fn get_mpid(&self, parser: &mut Parser) -> String {
+    pub fn mpid(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4);
         parser.read_string(4)
     }
 
-    pub fn get_ticker(&self, parser: &mut Parser) -> String {
+    pub fn ticker(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4 + 4);
         parser.read_string(8)
     }
 
-    pub fn get_primary_market_maker(&self, parser: &mut Parser) -> char {
+    pub fn primary_market_maker(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 4 + 8);
         char::from(parser.cursor.read_u8().unwrap())
     }
 
-    pub fn get_market_maker_mode(&self, parser: &mut Parser) -> char {
+    pub fn market_maker_mode(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 4 + 8 + 1);
         char::from(parser.cursor.read_u8().unwrap())
     }
 
-    pub fn get_market_participant_state(&self, parser: &mut Parser) -> char {
+    pub fn market_participant_state(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 4 + 8 + 1 + 1);
         char::from(parser.cursor.read_u8().unwrap())
+    }
+}
+
+impl Message for MarketParticipantMessage {
+    fn len(&self) -> u64 {
+        19
+    }
+    fn pos(&self) -> u64 {
+        self.pos
+    }
+    
+    fn set_position(&mut self, pos: u64) {
+        self.pos = pos;
     }
 }
 
@@ -270,34 +289,34 @@ impl AddOrderMessage {
         Self { pos: 0}
     }
 
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_side(&self, parser: &mut Parser) -> char {
+    pub fn side(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8);
         char::from(parser.cursor.read_u8().unwrap())
     }
     
-    pub fn get_shares(&self, parser: &mut Parser) -> u32 {
+    pub fn shares(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 1);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_ticker(&self, parser: &mut Parser) -> String {
+    pub fn ticker(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 4);
         parser.read_string(8)
     }
     
-    pub fn get_price(&self, parser: &mut Parser) -> u32 {
+    pub fn price(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 4 + 8);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
@@ -314,39 +333,39 @@ impl AddOrderWithMPIDMessage {
         Self { pos: 0}
     }
 
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_side(&self, parser: &mut Parser) -> char {
+    pub fn side(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8);
         char::from(parser.cursor.read_u8().unwrap())
     }
     
-    pub fn get_shares(&self, parser: &mut Parser) -> u32 {
+    pub fn shares(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 1);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_ticker(&self, parser: &mut Parser) -> String {
+    pub fn ticker(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 4);
         parser.read_string(8)
     }
     
-    pub fn get_price(&self, parser: &mut Parser) -> u32 {
+    pub fn price(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 4 + 8);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_mpid(&self, parser: &mut Parser) -> String {
+    pub fn mpid(&self, parser: &mut Parser) -> String {
         parser.cursor.set_position(self.pos + 4 + 8 + 1 + 4 + 8 + 4);
         parser.read_string(4)
     }
@@ -362,24 +381,24 @@ impl ExecuteOrderMessage {
         Self { pos: 0}
     }
 
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_shares(&self, parser: &mut Parser) -> u32 {
+    pub fn shares(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
         
     }
 
-    pub fn get_matchno(&self, parser: &mut Parser) -> u64 {
+    pub fn matchno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4 + 8 + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
     }
@@ -396,34 +415,34 @@ impl ExecuteOrderWithPriceMessage {
         Self { pos: 0}
     }
 
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_shares(&self, parser: &mut Parser) -> u32 {
+    pub fn shares(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
         
     }
 
-    pub fn get_matchno(&self, parser: &mut Parser) -> u64 {
+    pub fn matchno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4 + 8 + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
     }
 
-    pub fn get_printable(&self, parser: &mut Parser) -> char {
+    pub fn printable(&self, parser: &mut Parser) -> char {
         parser.cursor.set_position(self.pos + 4 + 8 + 4 + 8);
         char::from(parser.cursor.read_u8().unwrap())
     }
     
-    pub fn get_price(&self, parser: &mut Parser) -> u32 {
+    pub fn price(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 4 + 8 + 1);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
@@ -440,18 +459,18 @@ impl CancelOrderMessage {
         Self { pos: 0}
     }
 
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_shares(&self, parser: &mut Parser) -> u32 {
+    pub fn shares(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
         
@@ -469,12 +488,12 @@ impl DeleteOrderMessage {
         Self { pos: 0}
     }
 
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
@@ -492,30 +511,30 @@ impl ReplaceOrderMessage {
         Self { pos: 0}
     }
 
-    pub fn get_nanoseconds(&self, parser: &mut Parser) -> u32 {
+    pub fn nanoseconds(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
     
-    pub fn get_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
     }
     
-    pub fn get_new_refno(&self, parser: &mut Parser) -> u64 {
+    pub fn new_refno(&self, parser: &mut Parser) -> u64 {
         parser.cursor.set_position(self.pos + 4 + 8);
         parser.cursor.read_u64::<NetworkEndian>().unwrap()
         
     }
 
-    pub fn get_shares(&self, parser: &mut Parser) -> u32 {
+    pub fn shares(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 8);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
         
     }
 
-    pub fn get_price(&self, parser: &mut Parser) -> u32 {
+    pub fn price(&self, parser: &mut Parser) -> u32 {
         parser.cursor.set_position(self.pos + 4 + 8 + 8 + 4);
         parser.cursor.read_u32::<NetworkEndian>().unwrap()
     }
