@@ -1,40 +1,26 @@
+use byteorder::{NetworkEndian, ReadBytesExt};
 use std::fs::read;
 use std::io::{Cursor, Read};
-use byteorder::{NetworkEndian, ReadBytesExt};
-use std::time::Instant;
 use std::io::{Seek, SeekFrom};
+use std::time::Instant;
 
 // mod message;
 // mod orderbook;
 mod messages;
 
 use messages::{
-    Message,
-    TimeMessage,
-    SystemMessage,
-    StockDirectoryMessage,
-    StockTradingActionMessage,
-    RegSHOMessage,
-    MarketParticipantMessage,
-    AddOrderMessage,
-    AddOrderWithMPIDMessage,
-    ExecuteOrderMessage,
-    ExecuteOrderWithPriceMessage,
-    CancelOrderMessage,
-    DeleteOrderMessage,
-    ReplaceOrderMessage,
-    TradeMessage,
-    CrossTradeMessage,
-    NOIIMessage,
-    RPIIMessage
+    AddOrderMessage, AddOrderWithMPIDMessage, CancelOrderMessage, CrossTradeMessage,
+    DeleteOrderMessage, ExecuteOrderMessage, ExecuteOrderWithPriceMessage,
+    MarketParticipantMessage, Message, NOIIMessage, RPIIMessage, RegSHOMessage,
+    ReplaceOrderMessage, StockDirectoryMessage, StockTradingActionMessage, SystemMessage,
+    TimeMessage, TradeMessage,
 };
 
 struct Parser {
-    cursor: Cursor<Vec<u8>>
+    cursor: Cursor<Vec<u8>>,
 }
 
 impl Parser {
-
     fn is_done(&self) -> bool {
         self.cursor.position() as usize == self.cursor.get_ref().len() - 1
     }
@@ -51,7 +37,9 @@ impl Parser {
 
     #[inline(always)]
     fn skip_message(&mut self, message_size: u16) {
-        self.cursor.seek(SeekFrom::Current(message_size.into())).unwrap();
+        self.cursor
+            .seek(SeekFrom::Current(message_size.into()))
+            .unwrap();
     }
 
     #[inline(always)]
@@ -99,7 +87,7 @@ fn main() {
     let mut message_reads = 0;
     let mut seconds: u32;
     for _ in 0..10_000_000 {
-    // loop {
+        // loop {
         let message_size = parser.get_next_message_size();
         let message_type = parser.get_next_message_type();
         // TODO: use enum instead of char for message type matching
@@ -111,75 +99,76 @@ fn main() {
                     println!("The time is: {}", seconds);
                 }
                 time_msg.skip(&mut parser);
-            },
+            }
             'S' => {
                 system_msg.set_position(parser.cursor.position());
                 let event_code = char::from(system_msg.event_code(&mut parser).unwrap());
                 println!("System event: {}", event_code);
                 system_msg.skip(&mut parser);
-            },
+            }
             'R' => {
                 stock_dir_msg.set_position(parser.cursor.position());
                 // TODO: do something with the message...
                 stock_dir_msg.skip(&mut parser);
-            },
+            }
             'H' => {
                 stock_action_msg.set_position(parser.cursor.position());
                 stock_action_msg.skip(&mut parser);
-            },
+            }
             'Y' => {
                 reg_sho_msg.set_position(parser.cursor.position());
                 reg_sho_msg.skip(&mut parser);
-            },
+            }
             'L' => {
                 market_part_msg.set_position(parser.cursor.position());
                 market_part_msg.skip(&mut parser);
-            },
+            }
             _ => {
                 parser.skip_message(message_size - 1);
-            },
+            }
         }
         message_reads += 1;
         if message_reads % 1_000_000 == 0 {
             let elapsed = now.elapsed().as_secs_f32();
-            println!("elapsed: {}, messages: {}, speed: {}", elapsed, message_reads, message_reads as f32 / elapsed);
+            println!(
+                "elapsed: {}, messages: {}, speed: {}",
+                elapsed,
+                message_reads,
+                message_reads as f32 / elapsed
+            );
         }
         if parser.is_done() {
             break;
         }
 
         // TODO: implement logic for handling order messages
-        
+
         // if message type in ['A', 'F']
-            // if message.ticker in tickers
-                // add order to order list
-                // update order book
-        
+        // if message.ticker in tickers
+        // add order to order list
+        // update order book
+
         // if message type in ['E', 'C', 'X', 'D']
-            // if message.ticker in tickers
-                // complete the message
-                // update the order list
-                // updaet the order book
+        // if message.ticker in tickers
+        // complete the message
+        // update the order list
+        // updaet the order book
 
         // if message.message_type == ['U']
-            // message.complete(&orders);
-            // if message.ticker in tickers
-                // delete_msg, add_msg = message.split();
-                // add_msg.complete(&orders);
-                // delete_msg.complete(&orders);
-                // order_messages_bknd.write(&message);
-                // message_writes += 1;
-                // orders.update(&delete_msg);
-                // books.update(&delete_msg);
-                // orders.add(&add_msg);
-                // books.update(&add_msg);
-                // order_books_bknd.write(books)
+        // message.complete(&orders);
+        // if message.ticker in tickers
+        // delete_msg, add_msg = message.split();
+        // add_msg.complete(&orders);
+        // delete_msg.complete(&orders);
+        // order_messages_bknd.write(&message);
+        // message_writes += 1;
+        // orders.update(&delete_msg);
+        // books.update(&delete_msg);
+        // orders.add(&add_msg);
+        // books.update(&add_msg);
+        // order_books_bknd.write(books)
 
-
-
-        
         // TODO: implement logic for writing to disk
-        // 
-
+        //
     }
 }

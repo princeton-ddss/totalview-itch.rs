@@ -13,7 +13,13 @@ pub struct Order {
 
 impl Order {
     pub fn new(refno: u64, ticker: String, side: char, shares: u32, price: u32) -> Self {
-        Self { refno, ticker, side, shares, price }
+        Self {
+            refno,
+            ticker,
+            side,
+            shares,
+            price,
+        }
     }
 
     fn get_shares(&self) -> u32 {
@@ -26,7 +32,7 @@ impl Order {
 }
 
 pub struct OrderList {
-    list: HashMap<u64,Order>,
+    list: HashMap<u64, Order>,
 }
 
 impl OrderList {
@@ -39,7 +45,9 @@ impl OrderList {
     fn modify<T: ModifyOrderMessage>(&mut self, message: T) {
         let refno = message.get_refno();
         let shares = message.get_shares();
-        self.list.entry(refno).and_modify(|s| s.decrease_shares(shares));
+        self.list
+            .entry(refno)
+            .and_modify(|s| s.decrease_shares(shares));
 
         let order = self.list.get(&refno).unwrap();
         if order.get_shares() == 0 {
@@ -61,7 +69,7 @@ impl OrderBook {
                 let price = message.get_price();
                 let shares = message.get_shares();
                 self.bids.entry(price).or_insert(shares);
-            },
+            }
             Sell => {
                 let price = message.get_price();
                 let shares = message.get_shares();
@@ -81,7 +89,7 @@ impl OrderBook {
                 if *self.bids.get(&price).unwrap() == 0 {
                     self.bids.remove(&price);
                 }
-            },
+            }
             Sell => {
                 let price = message.get_price();
                 let shares = message.get_shares();

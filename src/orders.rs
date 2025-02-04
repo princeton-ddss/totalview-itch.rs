@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 enum Side {
     Buy,
-    Sell
+    Sell,
 }
 
 pub struct Order {
@@ -14,9 +14,14 @@ pub struct Order {
 }
 
 impl Order {
-    
     pub fn new(refno: u64, ticker: String, side: Side, shares: u32, price: u32) -> Self {
-        Self { refno, ticker, side, shares, price }
+        Self {
+            refno,
+            ticker,
+            side,
+            shares,
+            price,
+        }
     }
 
     fn get_shares(&self) -> u32 {
@@ -30,7 +35,7 @@ impl Order {
 
 enum CreateOrderMessage {
     AddOrderMessage,
-    AddOrderWithMPIDMessage
+    AddOrderWithMPIDMessage,
 }
 
 enum ModifyOrderMessage {
@@ -45,7 +50,6 @@ pub struct OrderList {
 }
 
 impl OrderList {
-
     fn add(&mut self, message: CreateOrderMessage) {
         let order = message.to_order();
         let refno = message.get_refno();
@@ -56,7 +60,9 @@ impl OrderList {
     fn modify(&mut self, message: ModifyOrderMessage) {
         let refno = message.get_refno();
         let shares = message.get_shares();
-        self.list.entry(refno).and_modify(|s| s.decrease_shares(shares));
+        self.list
+            .entry(refno)
+            .and_modify(|s| s.decrease_shares(shares));
 
         let order = self.list.get(&refno).unwrap();
         if order.get_shares() == 0 {
@@ -72,36 +78,23 @@ struct OrderBook {
 }
 
 impl OrderBook {
-    
     fn add(&mut self, message: CreateOrderMessage) {
         match message.get_side() {
-            Buy => {
-
-            },
-            Sell => {
-
-            }
+            Buy => {}
+            Sell => {}
         }
     }
 
     fn modify(&self, message: ModifyOrderMessage) {
         match message.get_side() {
-            Buy => {
-
-            },
-            Sell => {
-
-            },
+            Buy => {}
+            Sell => {}
         }
     }
 
     fn to_csv(&self) -> String {
-        for (price, shares) in self.bids.iter().rev() {
-
-        }
-        for (price, shares) in self.asks.iter() {
-
-        }
+        for (price, shares) in self.bids.iter().rev() {}
+        for (price, shares) in self.asks.iter() {}
     }
 }
 
@@ -109,5 +102,4 @@ impl OrderBook {
 fn main() {
     let orderbook = OrderBook::new();
     let add = AddMessage::new();
-    
 }

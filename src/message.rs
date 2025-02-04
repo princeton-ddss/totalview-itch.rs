@@ -1,7 +1,7 @@
 use crate::orderbook::Order;
 use csv::Error;
+use serde::{ser::SerializeStruct, Serialize};
 use strum_macros::EnumString;
-use serde::{Serialize, ser::SerializeStruct};
 
 // What if you created a Message type that you could use to construct specific
 // messages types from by providing a list of field names and types.
@@ -56,11 +56,14 @@ pub trait Message {
         let symbol = self.get_symbol();
         let seconds = self.get_seconds();
         let nanoseconds = self.get_nanoseconds();
-        println!("Message type {} received at time {}.{}", symbol, seconds, nanoseconds);
+        println!(
+            "Message type {} received at time {}.{}",
+            symbol, seconds, nanoseconds
+        );
     }
 
     fn get_symbol(&self) -> char;
-    
+
     fn get_seconds(&self) -> u32;
 
     fn get_nanoseconds(&self) -> u32;
@@ -82,7 +85,7 @@ pub trait ModifyOrderMessage {
 }
 
 pub struct TimeStamp {
-    seconds: u32
+    seconds: u32,
 }
 
 impl TimeStamp {
@@ -92,9 +95,15 @@ impl TimeStamp {
 }
 
 impl Message for TimeStamp {
-    fn get_symbol(&self) -> char { 'T' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { 0 }
+    fn get_symbol(&self) -> char {
+        'T'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        0
+    }
 }
 
 #[derive(Serialize)]
@@ -107,14 +116,24 @@ pub struct SystemEvent {
 
 impl SystemEvent {
     pub fn new(seconds: u32, nanoseconds: u32, event: char) -> Self {
-        Self { seconds, nanoseconds, event }
+        Self {
+            seconds,
+            nanoseconds,
+            event,
+        }
     }
 }
 
 impl Message for SystemEvent {
-    fn get_symbol(&self) -> char { 'S' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'S'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 #[derive(Serialize)]
@@ -131,15 +150,37 @@ pub struct StockDirectory {
 }
 
 impl StockDirectory {
-    pub fn new(seconds: u32, nanoseconds: u32, ticker: String, market_category: char, financial_status_indicator: char, round_lot_size: u32, round_lots_only: char) -> Self {
-        Self { seconds, nanoseconds, ticker, market_category, financial_status_indicator, round_lot_size, round_lots_only }
+    pub fn new(
+        seconds: u32,
+        nanoseconds: u32,
+        ticker: String,
+        market_category: char,
+        financial_status_indicator: char,
+        round_lot_size: u32,
+        round_lots_only: char,
+    ) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+            ticker,
+            market_category,
+            financial_status_indicator,
+            round_lot_size,
+            round_lots_only,
+        }
     }
 }
 
 impl Message for StockDirectory {
-    fn get_symbol(&self) -> char { 'R' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'R'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 #[derive(Serialize)]
@@ -154,15 +195,35 @@ pub struct StockTradingAction {
 }
 
 impl StockTradingAction {
-    pub fn new(seconds: u32, nanoseconds: u32, ticker: String, trading_state: char, reserved: char, reason: String) -> Self {
-        Self { seconds, nanoseconds, ticker, trading_state, reserved, reason }
+    pub fn new(
+        seconds: u32,
+        nanoseconds: u32,
+        ticker: String,
+        trading_state: char,
+        reserved: char,
+        reason: String,
+    ) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+            ticker,
+            trading_state,
+            reserved,
+            reason,
+        }
     }
 }
 
 impl Message for StockTradingAction {
-    fn get_symbol(&self) -> char { 'H' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'H'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 #[derive(Serialize)]
@@ -175,22 +236,33 @@ pub struct RegSHORestriction {
 }
 
 impl RegSHORestriction {
-    pub fn new(seconds: u32, nanoseconds: u32, ticker: String, reg_sho_action:char) -> Self {
-        Self { seconds, nanoseconds, ticker, reg_sho_action }
+    pub fn new(seconds: u32, nanoseconds: u32, ticker: String, reg_sho_action: char) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+            ticker,
+            reg_sho_action,
+        }
     }
 }
 
 impl Message for RegSHORestriction {
-    fn get_symbol(&self) -> char { 'Y' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'Y'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 #[derive(Serialize)]
 pub struct MarketParticipantPosition {
     seconds: u32,
     nanoseconds: u32,
-    mpid: String, // 4
+    mpid: String,   // 4
     ticker: String, // 8
     primary_market_maker: char,
     market_maker_mode: char,
@@ -214,15 +286,21 @@ impl MarketParticipantPosition {
             ticker,
             primary_market_maker,
             market_maker_mode,
-            market_participant_state
+            market_participant_state,
         }
     }
 }
 
 impl Message for MarketParticipantPosition {
-    fn get_symbol(&self) -> char { 'L' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'L'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 enum OrderMessageType {
@@ -252,8 +330,20 @@ pub struct OrderMessage {
 }
 
 impl OrderMessage {
-
-    pub fn new(seconds: u32, nanoseconds: u32, message_type: char, refno: u64, ticker: String, side: char, shares: u32, price: u32, mpid: Option<String>, matchno: Option<u64>, printable: Option<char>, new_refno: Option<u64>) -> Self {
+    pub fn new(
+        seconds: u32,
+        nanoseconds: u32,
+        message_type: char,
+        refno: u64,
+        ticker: String,
+        side: char,
+        shares: u32,
+        price: u32,
+        mpid: Option<String>,
+        matchno: Option<u64>,
+        printable: Option<char>,
+        new_refno: Option<u64>,
+    ) -> Self {
         Self {
             seconds,
             nanoseconds,
@@ -280,11 +370,16 @@ impl OrderMessage {
 }
 
 impl Message for OrderMessage {
-    fn get_symbol(&self) -> char { self.message_type }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        self.message_type
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
-
 
 // #[derive(Serialize)]
 pub struct AddOrder {
@@ -299,8 +394,24 @@ pub struct AddOrder {
 }
 
 impl AddOrder {
-    pub fn new(seconds: u32, nanoseconds: u32, refno: u64, side: char, shares: u32, ticker: String, price: u32) -> Self {
-        Self { seconds, nanoseconds, refno, side, shares, ticker, price }
+    pub fn new(
+        seconds: u32,
+        nanoseconds: u32,
+        refno: u64,
+        side: char,
+        shares: u32,
+        ticker: String,
+        price: u32,
+    ) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+            refno,
+            side,
+            shares,
+            ticker,
+            price,
+        }
     }
 
     pub fn get_refno(&self) -> u64 {
@@ -316,14 +427,21 @@ impl AddOrder {
     }
 
     pub fn to_order(&self) -> Order {
-        Order::new(self.refno, self.ticker.clone(), self.side, self.shares, self.price)
+        Order::new(
+            self.refno,
+            self.ticker.clone(),
+            self.side,
+            self.shares,
+            self.price,
+        )
     }
 }
 
 impl Serialize for AddOrder {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer {
+    where
+        S: serde::Serializer,
+    {
         let mut state = serializer.serialize_struct("AddOrder", 12)?;
         state.serialize_field("seconds", &self.seconds)?;
         state.serialize_field("nanoseconds", &self.nanoseconds)?;
@@ -342,9 +460,15 @@ impl Serialize for AddOrder {
 }
 
 impl Message for AddOrder {
-    fn get_symbol(&self) -> char { 'A' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'A'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 pub struct AddOrderWithMPID {
@@ -356,12 +480,30 @@ pub struct AddOrderWithMPID {
     shares: u32,
     ticker: String,
     price: u32,
-    mpid: String, // 4 bytes        
+    mpid: String, // 4 bytes
 }
 
 impl AddOrderWithMPID {
-    pub fn new(seconds: u32, nanoseconds: u32, refno: u64, side: char, shares: u32, ticker: String, price: u32, mpid: String) -> Self {
-        Self { seconds, nanoseconds, refno, side, shares, ticker, price, mpid }
+    pub fn new(
+        seconds: u32,
+        nanoseconds: u32,
+        refno: u64,
+        side: char,
+        shares: u32,
+        ticker: String,
+        price: u32,
+        mpid: String,
+    ) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+            refno,
+            side,
+            shares,
+            ticker,
+            price,
+            mpid,
+        }
     }
 
     pub fn get_refno(&self) -> u64 {
@@ -374,19 +516,26 @@ impl AddOrderWithMPID {
 
     pub fn get_shares(&self) -> u32 {
         self.shares
-    }    
+    }
 }
 
 impl Message for AddOrderWithMPID {
-    fn get_symbol(&self) -> char { 'F' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'F'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 impl Serialize for AddOrderWithMPID {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer {
+    where
+        S: serde::Serializer,
+    {
         let mut state = serializer.serialize_struct("AddOrderWithMPID", 12)?;
         state.serialize_field("seconds", &self.seconds)?;
         state.serialize_field("nanoseconds", &self.nanoseconds)?;
@@ -404,7 +553,6 @@ impl Serialize for AddOrderWithMPID {
     }
 }
 
-
 pub struct ExecuteOrder {
     seconds: u32,
     nanoseconds: u32,
@@ -415,7 +563,13 @@ pub struct ExecuteOrder {
 
 impl ExecuteOrder {
     pub fn new(seconds: u32, nanoseconds: u32, refno: u64, shares: u32, matchno: u64) -> Self {
-        Self { seconds, nanoseconds, refno, shares, matchno }
+        Self {
+            seconds,
+            nanoseconds,
+            refno,
+            shares,
+            matchno,
+        }
     }
 
     pub fn get_refno(&self) -> u64 {
@@ -424,15 +578,20 @@ impl ExecuteOrder {
 }
 
 impl Message for ExecuteOrder {
-    fn get_symbol(&self) -> char { 'E' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'E'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
-
 
 #[derive(Serialize)]
 pub struct ExecuteOrderWithPrice {
-    seconds:u32,
+    seconds: u32,
     nanoseconds: u32,
     refno: u64,
     shares: u32,
@@ -442,8 +601,24 @@ pub struct ExecuteOrderWithPrice {
 }
 
 impl ExecuteOrderWithPrice {
-    pub fn new(seconds: u32, nanoseconds: u32, refno: u64, shares: u32, matchno: u64, printable: char, price: u32) -> Self {
-        Self { seconds, nanoseconds, refno, shares, matchno, printable, price }
+    pub fn new(
+        seconds: u32,
+        nanoseconds: u32,
+        refno: u64,
+        shares: u32,
+        matchno: u64,
+        printable: char,
+        price: u32,
+    ) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+            refno,
+            shares,
+            matchno,
+            printable,
+            price,
+        }
     }
 
     pub fn get_refno(&self) -> u64 {
@@ -452,9 +627,15 @@ impl ExecuteOrderWithPrice {
 }
 
 impl Message for ExecuteOrderWithPrice {
-    fn get_symbol(&self) -> char { 'C' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'C'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 #[derive(Serialize)]
@@ -467,7 +648,12 @@ pub struct CancelOrder {
 
 impl CancelOrder {
     pub fn new(seconds: u32, nanoseconds: u32, refno: u64, shares: u32) -> Self {
-        Self { seconds, nanoseconds, refno, shares }
+        Self {
+            seconds,
+            nanoseconds,
+            refno,
+            shares,
+        }
     }
 
     pub fn get_refno(&self) -> u64 {
@@ -476,9 +662,15 @@ impl CancelOrder {
 }
 
 impl Message for CancelOrder {
-    fn get_symbol(&self) -> char { 'X' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'X'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 #[derive(Serialize)]
@@ -490,7 +682,11 @@ pub struct DeleteOrder {
 
 impl DeleteOrder {
     pub fn new(seconds: u32, nanoseconds: u32, refno: u64) -> Self {
-        Self { seconds, nanoseconds, refno }
+        Self {
+            seconds,
+            nanoseconds,
+            refno,
+        }
     }
 
     pub fn get_refno(&self) -> u64 {
@@ -499,9 +695,15 @@ impl DeleteOrder {
 }
 
 impl Message for DeleteOrder {
-    fn get_symbol(&self) -> char { 'D' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'D'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }
 
 #[derive(Serialize)]
@@ -515,8 +717,22 @@ pub struct ReplaceOrder {
 }
 
 impl ReplaceOrder {
-    pub fn new(seconds: u32, nanoseconds: u32, refno: u64, new_refno: u64, shares: u32, price: u32) -> Self {
-        Self { seconds, nanoseconds, refno, new_refno, shares, price }
+    pub fn new(
+        seconds: u32,
+        nanoseconds: u32,
+        refno: u64,
+        new_refno: u64,
+        shares: u32,
+        price: u32,
+    ) -> Self {
+        Self {
+            seconds,
+            nanoseconds,
+            refno,
+            new_refno,
+            shares,
+            price,
+        }
     }
 
     pub fn get_refno(&self) -> u64 {
@@ -525,7 +741,13 @@ impl ReplaceOrder {
 }
 
 impl Message for ReplaceOrder {
-    fn get_symbol(&self) -> char { 'U' }
-    fn get_seconds(&self) -> u32 { self.seconds }
-    fn get_nanoseconds(&self) -> u32 { self.nanoseconds }
+    fn get_symbol(&self) -> char {
+        'U'
+    }
+    fn get_seconds(&self) -> u32 {
+        self.seconds
+    }
+    fn get_nanoseconds(&self) -> u32 {
+        self.nanoseconds
+    }
 }

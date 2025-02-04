@@ -1,6 +1,6 @@
-use std::fs::File;
 use csv;
 use serde::Serialize;
+use std::fs::File;
 
 use crate::Message;
 
@@ -11,9 +11,12 @@ pub struct Backend {
 }
 
 impl Backend {
-    
     pub fn new(writer: csv::Writer<File>, size: usize) -> Self {
-        Self { writer, pos: 0, size }
+        Self {
+            writer,
+            pos: 0,
+            size,
+        }
     }
 
     pub fn write<T: Serialize + Message>(&mut self, item: T) -> std::io::Result<()> {
@@ -55,13 +58,11 @@ impl Backend {
 //         Ok(())
 //     }
 
-
-
 //     pub fn flush(&mut self) {
 //         // Write whatever is in the buffer to file
 //         let mut options = OpenOptions::new();
 //         let mut file = options.append(true).create(true).open(&self.dir);
-        
+
 //     }
 // }
 
@@ -79,8 +80,6 @@ impl Backend {
 //     file.write_all(line.as_bytes()).unwrap();
 //     Ok(())
 // }
-
-
 
 // pub fn read_csv() {
 
