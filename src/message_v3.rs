@@ -1,5 +1,5 @@
 use byteorder::{NetworkEndian, ReadBytesExt};
-use std::io::Cursor;
+use std::io::{Cursor, Result};
 use std::path::Path;
 
 pub enum MessageType {
@@ -43,6 +43,20 @@ impl Message {
             'U' => MessageType::ReplaceOrder,
             _ => MessageType::Unknown,
         }
+    }
+
+    pub fn seconds(&mut self) -> Result<Option<u32>> {
+        let offset: u64 = match self.kind() {
+            MessageType::TimeStamp => 2 + 1,
+            _ => 0,
+        };
+
+        if offset == 0 {
+            return Ok(None);
+        }
+
+        self.cursor.set_position(self.pos + offset);
+        self.cursor.read_u32::<NetworkEndian>().map(Some)
     }
 
     pub fn next(&mut self) {
