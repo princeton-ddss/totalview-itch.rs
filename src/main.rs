@@ -4,11 +4,9 @@ use std::io::{Cursor, Read};
 use std::io::{Seek, SeekFrom};
 use std::time::Instant;
 
-// mod message;
-// mod orderbook;
-mod messages;
+mod message_v1;
 
-use messages::{
+use message_v1::{
     AddOrderMessage, AddOrderWithMPIDMessage, CancelOrderMessage, CrossTradeMessage,
     DeleteOrderMessage, ExecuteOrderMessage, ExecuteOrderWithPriceMessage,
     MarketParticipantMessage, Message, NOIIMessage, RPIIMessage, RegSHOMessage,
@@ -53,7 +51,7 @@ impl Parser {
 }
 
 fn main() {
-    let file_name = "/Users/colinswaney/GitHub/TotalViewITCH.jl/data/bin/S031413-v41.txt";
+    let file_name = "./data/bin/S031413-v41.txt";
 
     println!("Reading file: {}", file_name);
 
