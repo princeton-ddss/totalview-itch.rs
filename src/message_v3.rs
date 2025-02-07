@@ -2,6 +2,7 @@ use byteorder::{NetworkEndian, ReadBytesExt};
 use std::io::{Cursor, Result};
 use std::path::Path;
 
+#[derive(Debug)]
 pub enum MessageType {
     TimeStamp,
     SystemEvent,
@@ -66,5 +67,13 @@ impl Message {
 
     pub fn serialize() {
         todo!("Return a materialized serialization of the current message");
+    }
+}
+
+pub fn demo() {
+    let mut message = Message::new("./data/bin/S031413-v41.txt");
+    for _ in 0..10 {
+        println!("{:#?}: {:#?}", message.kind(), message.seconds().unwrap());
+        message.next();
     }
 }

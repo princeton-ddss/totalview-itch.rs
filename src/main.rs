@@ -5,6 +5,7 @@ use std::io::{Seek, SeekFrom};
 use std::time::Instant;
 
 mod message_v1;
+mod message_v3;
 
 use message_v1::{
     AddOrderMessage, AddOrderWithMPIDMessage, CancelOrderMessage, CrossTradeMessage,
@@ -51,6 +52,9 @@ impl Parser {
 }
 
 fn main() {
+    message_v3::demo();
+    return;
+
     let file_name = "./data/bin/S031413-v41.txt";
 
     println!("Reading file: {}", file_name);
