@@ -19,7 +19,7 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn new(filepath: &Path) -> Self {
+    pub fn new<P: AsRef<Path>>(filepath: P) -> Self {
         let buffer = std::fs::read(filepath).expect("Unable to read file");
         let cursor = Cursor::new(buffer);
         let pos = 0;
