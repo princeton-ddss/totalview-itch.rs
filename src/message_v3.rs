@@ -60,9 +60,8 @@ impl Message {
     }
 
     pub fn next(&mut self) {
-        let offset = self.size() as u64;
-        self.cursor.set_position(self.pos + offset);
-        self.pos = self.cursor.position();
+        let offset = self.size() as u64 + 2;
+        self.pos += offset;
     }
 
     pub fn serialize() {
