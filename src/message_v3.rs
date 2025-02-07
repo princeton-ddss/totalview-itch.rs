@@ -62,6 +62,25 @@ impl Message {
         self.cursor.read_u32::<NetworkEndian>().map(Some)
     }
 
+    pub fn nanoseconds(&mut self) -> Result<Option<u32>> {
+        let offset: u64 = match self.kind() {
+            MessageType::SystemEvent
+            | MessageType::AddOrder
+            | MessageType::ExecuteOrder
+            | MessageType::CancelOrder
+            | MessageType::DeleteOrder
+            | MessageType::ReplaceOrder => 2 + 1,
+            _ => 0,
+        };
+
+        if offset == 0 {
+            return Ok(None);
+        }
+
+        self.cursor.set_position(self.pos + offset);
+        self.cursor.read_u32::<NetworkEndian>().map(Some)
+    }
+
     pub fn next(&mut self) {
         let offset = 2 + self.size() as u64;
         self.pos += offset;
