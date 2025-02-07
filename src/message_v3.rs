@@ -28,6 +28,8 @@ impl Message {
     }
 
     fn size(&mut self) -> u16 {
+        // NOTE: Message size does not include
+        // two bytes used for size information.
         self.cursor.set_position(self.pos);
         self.cursor.read_u16::<NetworkEndian>().unwrap()
     }
@@ -61,7 +63,7 @@ impl Message {
     }
 
     pub fn next(&mut self) {
-        let offset = self.size() as u64 + 2;
+        let offset = 2 + self.size() as u64;
         self.pos += offset;
     }
 
