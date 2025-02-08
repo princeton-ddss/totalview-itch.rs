@@ -1,3 +1,5 @@
 /target
 /sandbox
 /data
+
+**/*.DS_Store
