@@ -101,6 +101,10 @@ impl Message {
         self.side = Some(side);
     }
 
+    fn set_shares(&mut self, shares: u32) {
+        self.shares = Some(shares);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -123,6 +127,10 @@ impl Message {
 
     pub fn side(&self) -> Option<Side> {
         self.side
+    }
+
+    pub fn shares(&self) -> Option<u32> {
+        self.shares
     }
 }
 
@@ -224,21 +232,27 @@ impl Parser {
                     'S' => Side::Sell,
                     e => panic!("Invalid code for trading: {}", e),
                 };
+                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_side(side);
+                self.current_message.set_shares(shares);
             }
             MessageType::ExecuteOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
+                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
+                self.current_message.set_shares(shares);
             }
             MessageType::CancelOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
+                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
+                self.current_message.set_shares(shares);
             }
             MessageType::DeleteOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
@@ -249,8 +263,11 @@ impl Parser {
             MessageType::ReplaceOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
+                let new_refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
+                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
+                self.current_message.set_shares(shares);
             }
         }
     }
