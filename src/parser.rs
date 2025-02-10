@@ -1,5 +1,5 @@
 use byteorder::{NetworkEndian, ReadBytesExt};
-use std::io::{Cursor, Seek, SeekFrom};
+use std::io::{Cursor, Error, ErrorKind, Read, Result, Seek, SeekFrom};
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -105,6 +105,10 @@ impl Message {
         self.shares = Some(shares);
     }
 
+    fn set_ticker(&mut self, ticker: String) {
+        self.ticker = Some(ticker);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -132,7 +136,24 @@ impl Message {
     pub fn shares(&self) -> Option<u32> {
         self.shares
     }
+
+    pub fn ticker(&self) -> Option<String> {
+        self.ticker.clone()
+    }
 }
+
+trait ReadString: Read {
+    fn read_utf8_string(&mut self, string_length: usize) -> Result<String> {
+        let mut buf = vec![0; string_length];
+        self.read_exact(&mut buf)?;
+        match String::from_utf8(buf) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
+        }
+    }
+}
+
+impl ReadString for Cursor<Vec<u8>> {}
 
 pub struct Parser {
     cursor: Cursor<Vec<u8>>,
@@ -170,22 +191,18 @@ impl Parser {
                     break;
                 }
                 'E' => {
-                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::ExecuteOrder);
                     break;
                 }
                 'X' => {
-                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::CancelOrder);
                     break;
                 }
                 'D' => {
-                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::DeleteOrder);
                     break;
                 }
                 'U' => {
-                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::ReplaceOrder);
                     break;
                 }
@@ -233,10 +250,12 @@ impl Parser {
                     e => panic!("Invalid code for trading: {}", e),
                 };
                 let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let ticker = self.cursor.read_utf8_string(8).unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_side(side);
                 self.current_message.set_shares(shares);
+                self.current_message.set_ticker(ticker);
             }
             MessageType::ExecuteOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
