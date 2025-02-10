@@ -114,22 +114,27 @@ impl Parser {
                     break;
                 }
                 'A' => {
+                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::AddOrder);
                     break;
                 }
                 'E' => {
+                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::ExecuteOrder);
                     break;
                 }
                 'X' => {
+                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::CancelOrder);
                     break;
                 }
                 'D' => {
+                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::DeleteOrder);
                     break;
                 }
                 'U' => {
+                    // TODO: Implement ticker-based skip logic
                     self.read_message(MessageType::ReplaceOrder);
                     break;
                 }
