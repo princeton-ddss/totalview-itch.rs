@@ -97,6 +97,10 @@ impl Message {
         self.refno = Some(refno);
     }
 
+    fn set_side(&mut self, side: Side) {
+        self.side = Some(side);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -115,6 +119,10 @@ impl Message {
 
     pub fn refno(&self) -> Option<u64> {
         self.refno
+    }
+
+    pub fn side(&self) -> Option<Side> {
+        self.side
     }
 }
 
@@ -211,8 +219,14 @@ impl Parser {
             MessageType::AddOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
+                let side = match char::from(self.cursor.read_u8().unwrap()) {
+                    'B' => Side::Buy,
+                    'S' => Side::Sell,
+                    e => panic!("Invalid code for trading: {}", e),
+                };
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
+                self.current_message.set_side(side);
             }
             MessageType::ExecuteOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
