@@ -89,6 +89,10 @@ impl Message {
         self.nanoseconds = Some(nanoseconds);
     }
 
+    fn set_event_code(&mut self, event_code: EventCode) {
+        self.event_code = Some(event_code);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -99,6 +103,10 @@ impl Message {
 
     pub fn nanoseconds(&self) -> Option<u32> {
         self.nanoseconds
+    }
+
+    pub fn event_code(&self) -> Option<EventCode> {
+        self.event_code
     }
 }
 
@@ -177,7 +185,20 @@ impl Parser {
             }
             MessageType::SystemEvent => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let event_code = match char::from(self.cursor.read_u8().unwrap()) {
+                    'O' => EventCode::StartMessages,
+                    'S' => EventCode::StartSystem,
+                    'Q' => EventCode::StartMarketHours,
+                    'M' => EventCode::EndMarketHours,
+                    'E' => EventCode::EndSystem,
+                    'C' => EventCode::EndMessages,
+                    'A' => EventCode::EmergencyMarketHalt,
+                    'R' => EventCode::EmergencyMarketQuoteOnly,
+                    'B' => EventCode::EmergencyMarketResumption,
+                    e => panic!("Invalid event code encountered: {}", e),
+                };
                 self.current_message.set_nanoseconds(nanoseconds);
+                self.current_message.set_event_code(event_code);
             }
             MessageType::AddOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
