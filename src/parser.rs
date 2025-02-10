@@ -66,12 +66,20 @@ impl Message {
         self.seconds = Some(seconds);
     }
 
+    fn set_nanoseconds(&mut self, nanoseconds: u32) {
+        self.nanoseconds = Some(nanoseconds);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
 
     pub fn seconds(&self) -> Option<u32> {
         self.seconds
+    }
+
+    pub fn nanoseconds(&self) -> Option<u32> {
+        self.nanoseconds
     }
 }
 
@@ -143,12 +151,30 @@ impl Parser {
                 let seconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
                 self.current_message.set_seconds(seconds);
             }
-            MessageType::SystemEvent => {}
-            MessageType::AddOrder => {}
-            MessageType::ExecuteOrder => {}
-            MessageType::CancelOrder => {}
-            MessageType::DeleteOrder => {}
-            MessageType::ReplaceOrder => {}
+            MessageType::SystemEvent => {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                self.current_message.set_nanoseconds(nanoseconds);
+            }
+            MessageType::AddOrder => {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                self.current_message.set_nanoseconds(nanoseconds);
+            }
+            MessageType::ExecuteOrder => {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                self.current_message.set_nanoseconds(nanoseconds);
+            }
+            MessageType::CancelOrder => {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                self.current_message.set_nanoseconds(nanoseconds);
+            }
+            MessageType::DeleteOrder => {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                self.current_message.set_nanoseconds(nanoseconds);
+            }
+            MessageType::ReplaceOrder => {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                self.current_message.set_nanoseconds(nanoseconds);
+            }
         }
     }
 
