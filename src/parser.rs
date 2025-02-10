@@ -2,7 +2,7 @@ use byteorder::{NetworkEndian, ReadBytesExt};
 use std::io::{Cursor, Seek, SeekFrom};
 use std::path::Path;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MessageType {
     TimeStamp,
     SystemEvent,
@@ -13,13 +13,32 @@ pub enum MessageType {
     ReplaceOrder,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EventCode {
+    StartMessages,
+    StartSystem,
+    StartMarketHours,
+    EndMarketHours,
+    EndSystem,
+    EndMessages,
+    EmergencyMarketHalt,
+    EmergencyMarketQuoteOnly,
+    EmergencyMarketResumption,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Side {
+    Buy,
+    Sell,
+}
+
 pub struct Message {
     kind: Option<MessageType>,
     seconds: Option<u32>,
     nanoseconds: Option<u32>,
-    event_code: Option<u8>,
+    event_code: Option<EventCode>,
     refno: Option<u64>,
-    side: Option<u8>,
+    side: Option<Side>,
     shares: Option<u32>,
     ticker: Option<String>,
     price: Option<u32>,
