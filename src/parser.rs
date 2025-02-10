@@ -93,6 +93,10 @@ impl Message {
         self.event_code = Some(event_code);
     }
 
+    fn set_refno(&mut self, refno: u64) {
+        self.refno = Some(refno);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -107,6 +111,10 @@ impl Message {
 
     pub fn event_code(&self) -> Option<EventCode> {
         self.event_code
+    }
+
+    pub fn refno(&self) -> Option<u64> {
+        self.refno
     }
 }
 
@@ -202,23 +210,33 @@ impl Parser {
             }
             MessageType::AddOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
+                self.current_message.set_refno(refno);
             }
             MessageType::ExecuteOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
+                self.current_message.set_refno(refno);
             }
             MessageType::CancelOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
+                self.current_message.set_refno(refno);
             }
             MessageType::DeleteOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
+                self.current_message.set_refno(refno);
             }
             MessageType::ReplaceOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
                 self.current_message.set_nanoseconds(nanoseconds);
+                self.current_message.set_refno(refno);
             }
         }
     }
