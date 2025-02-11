@@ -117,6 +117,10 @@ impl Message {
         self.matchno = Some(matchno);
     }
 
+    fn set_new_refno(&mut self, new_refno: u64) {
+        self.new_refno = Some(new_refno);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -155,6 +159,10 @@ impl Message {
 
     pub fn matchno(&self) -> Option<u64> {
         self.matchno
+    }
+
+    pub fn new_refno(&self) -> Option<u64> {
+        self.new_refno
     }
 }
 
@@ -308,6 +316,7 @@ impl Parser {
                 let price = self.cursor.read_u32::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
+                self.current_message.set_new_refno(new_refno);
                 self.current_message.set_shares(shares);
                 self.current_message.set_price(price);
             }
