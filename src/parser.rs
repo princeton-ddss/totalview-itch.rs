@@ -109,6 +109,10 @@ impl Message {
         self.ticker = Some(ticker);
     }
 
+    fn set_price(&mut self, price: u32) {
+        self.price = Some(price);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -139,6 +143,10 @@ impl Message {
 
     pub fn ticker(&self) -> Option<String> {
         self.ticker.clone()
+    }
+
+    pub fn price(&self) -> Option<u32> {
+        self.price
     }
 }
 
@@ -252,11 +260,13 @@ impl Parser {
                 };
                 let shares = self.cursor.read_u32::<NetworkEndian>()?;
                 let ticker = self.cursor.read_utf8_string(8)?;
+                let price = self.cursor.read_u32::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_side(side);
                 self.current_message.set_shares(shares);
                 self.current_message.set_ticker(ticker);
+                self.current_message.set_price(price);
             }
             MessageType::ExecuteOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
@@ -285,9 +295,11 @@ impl Parser {
                 let refno = self.cursor.read_u64::<NetworkEndian>()?;
                 let new_refno = self.cursor.read_u64::<NetworkEndian>()?;
                 let shares = self.cursor.read_u32::<NetworkEndian>()?;
+                let price = self.cursor.read_u32::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_shares(shares);
+                self.current_message.set_price(price);
             }
         }
         Ok(())
