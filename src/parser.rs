@@ -113,6 +113,10 @@ impl Message {
         self.price = Some(price);
     }
 
+    fn set_matchno(&mut self, matchno: u64) {
+        self.matchno = Some(matchno);
+    }
+
     pub fn kind(&self) -> Option<MessageType> {
         self.kind
     }
@@ -147,6 +151,10 @@ impl Message {
 
     pub fn price(&self) -> Option<u32> {
         self.price
+    }
+
+    pub fn matchno(&self) -> Option<u64> {
+        self.matchno
     }
 }
 
@@ -272,9 +280,11 @@ impl Parser {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
                 let refno = self.cursor.read_u64::<NetworkEndian>()?;
                 let shares = self.cursor.read_u32::<NetworkEndian>()?;
+                let matchno = self.cursor.read_u64::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_shares(shares);
+                self.current_message.set_matchno(matchno);
             }
             MessageType::CancelOrder => {
                 let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
