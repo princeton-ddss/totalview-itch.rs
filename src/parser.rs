@@ -261,7 +261,12 @@ impl Parser {
                     'A' => EventCode::EmergencyMarketHalt,
                     'R' => EventCode::EmergencyMarketQuoteOnly,
                     'B' => EventCode::EmergencyMarketResumption,
-                    e => panic!("Invalid event code encountered: {}", e),
+                    unknown_code => {
+                        return Err(Error::new(
+                            ErrorKind::InvalidData,
+                            format!("Invalid event code encountered: {}", unknown_code),
+                        ));
+                    }
                 };
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_event_code(event_code);
@@ -272,7 +277,12 @@ impl Parser {
                 let side = match char::from(self.cursor.read_u8()?) {
                     'B' => Side::Buy,
                     'S' => Side::Sell,
-                    e => panic!("Invalid code for trading: {}", e),
+                    unknown_code => {
+                        return Err(Error::new(
+                            ErrorKind::InvalidData,
+                            format!("Invalid code for trading: {}", unknown_code),
+                        ));
+                    }
                 };
                 let shares = self.cursor.read_u32::<NetworkEndian>()?;
                 let ticker = self.cursor.read_utf8_string(8)?;
