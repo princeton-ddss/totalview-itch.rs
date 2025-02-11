@@ -173,60 +173,61 @@ impl Parser {
         }
     }
 
-    pub fn next(&mut self) {
+    pub fn next(&mut self) -> Result<()> {
         loop {
-            let size = self.cursor.read_u16::<NetworkEndian>().unwrap();
-            match char::from(self.cursor.read_u8().unwrap()) {
+            let size = self.cursor.read_u16::<NetworkEndian>()?;
+            match char::from(self.cursor.read_u8()?) {
                 'T' => {
-                    self.read_message(MessageType::TimeStamp);
+                    self.read_message(MessageType::TimeStamp)?;
                     break;
                 }
                 'S' => {
-                    self.read_message(MessageType::SystemEvent);
+                    self.read_message(MessageType::SystemEvent)?;
                     break;
                 }
                 'A' => {
                     // TODO: Implement ticker-based skip logic
-                    self.read_message(MessageType::AddOrder);
+                    self.read_message(MessageType::AddOrder)?;
                     break;
                 }
                 'E' => {
-                    self.read_message(MessageType::ExecuteOrder);
+                    self.read_message(MessageType::ExecuteOrder)?;
                     break;
                 }
                 'X' => {
-                    self.read_message(MessageType::CancelOrder);
+                    self.read_message(MessageType::CancelOrder)?;
                     break;
                 }
                 'D' => {
-                    self.read_message(MessageType::DeleteOrder);
+                    self.read_message(MessageType::DeleteOrder)?;
                     break;
                 }
                 'U' => {
-                    self.read_message(MessageType::ReplaceOrder);
+                    self.read_message(MessageType::ReplaceOrder)?;
                     break;
                 }
                 _ => {
-                    self.skip_message(size);
+                    self.skip_message(size)?;
                     continue;
                 }
             }
         }
+        Ok(())
     }
 
-    fn read_message(&mut self, kind: MessageType) {
+    fn read_message(&mut self, kind: MessageType) -> Result<()> {
         self.current_message.reset();
         self.current_message.set_kind(kind);
 
         // NOTE: Assumes the message has been read up to the type byte
         match kind {
             MessageType::TimeStamp => {
-                let seconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let seconds = self.cursor.read_u32::<NetworkEndian>()?;
                 self.current_message.set_seconds(seconds);
             }
             MessageType::SystemEvent => {
-                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
-                let event_code = match char::from(self.cursor.read_u8().unwrap()) {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
+                let event_code = match char::from(self.cursor.read_u8()?) {
                     'O' => EventCode::StartMessages,
                     'S' => EventCode::StartSystem,
                     'Q' => EventCode::StartMarketHours,
@@ -242,15 +243,15 @@ impl Parser {
                 self.current_message.set_event_code(event_code);
             }
             MessageType::AddOrder => {
-                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
-                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
-                let side = match char::from(self.cursor.read_u8().unwrap()) {
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
+                let refno = self.cursor.read_u64::<NetworkEndian>()?;
+                let side = match char::from(self.cursor.read_u8()?) {
                     'B' => Side::Buy,
                     'S' => Side::Sell,
                     e => panic!("Invalid code for trading: {}", e),
                 };
-                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
-                let ticker = self.cursor.read_utf8_string(8).unwrap();
+                let shares = self.cursor.read_u32::<NetworkEndian>()?;
+                let ticker = self.cursor.read_utf8_string(8)?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_side(side);
@@ -258,42 +259,44 @@ impl Parser {
                 self.current_message.set_ticker(ticker);
             }
             MessageType::ExecuteOrder => {
-                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
-                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
-                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
+                let refno = self.cursor.read_u64::<NetworkEndian>()?;
+                let shares = self.cursor.read_u32::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_shares(shares);
             }
             MessageType::CancelOrder => {
-                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
-                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
-                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
+                let refno = self.cursor.read_u64::<NetworkEndian>()?;
+                let shares = self.cursor.read_u32::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_shares(shares);
             }
             MessageType::DeleteOrder => {
-                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
-                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
+                let refno = self.cursor.read_u64::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
             }
             MessageType::ReplaceOrder => {
-                let nanoseconds = self.cursor.read_u32::<NetworkEndian>().unwrap();
-                let refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
-                let new_refno = self.cursor.read_u64::<NetworkEndian>().unwrap();
-                let shares = self.cursor.read_u32::<NetworkEndian>().unwrap();
+                let nanoseconds = self.cursor.read_u32::<NetworkEndian>()?;
+                let refno = self.cursor.read_u64::<NetworkEndian>()?;
+                let new_refno = self.cursor.read_u64::<NetworkEndian>()?;
+                let shares = self.cursor.read_u32::<NetworkEndian>()?;
                 self.current_message.set_nanoseconds(nanoseconds);
                 self.current_message.set_refno(refno);
                 self.current_message.set_shares(shares);
             }
         }
+        Ok(())
     }
 
-    fn skip_message(&mut self, size: u16) {
+    fn skip_message(&mut self, size: u16) -> Result<()> {
         // NOTE: Assumes the message has been read up to the type byte
         let offset = (size - 1) as i64;
-        self.cursor.seek(SeekFrom::Current(offset)).unwrap();
+        self.cursor.seek(SeekFrom::Current(offset))?;
+        Ok(())
     }
 }
