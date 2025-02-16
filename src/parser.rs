@@ -187,6 +187,8 @@ pub struct Parser {
 
 impl Parser {
     pub fn new<P: AsRef<Path>>(filepath: P) -> Self {
+        // NOTE: The current approach loads the entire file content into memory
+        // TODO: Explore alternatives to read and process the file content in smaller chunks
         let buffer = std::fs::read(filepath).expect("Unable to read file");
         let cursor = Cursor::new(buffer);
 
@@ -200,6 +202,7 @@ impl Parser {
 
     pub fn next(&mut self) -> Result<()> {
         loop {
+            // TODO: Add logic to handle reaching the end of the buffer
             let size = self.cursor.read_u16::<NetworkEndian>()?;
             match char::from(self.cursor.read_u8()?) {
                 'T' => {
