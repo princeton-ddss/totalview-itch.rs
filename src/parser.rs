@@ -32,6 +32,7 @@ pub enum Side {
     Sell,
 }
 
+#[derive(Debug)]
 pub struct Message {
     kind: Option<MessageType>,
     seconds: Option<u32>,
