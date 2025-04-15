@@ -4,7 +4,7 @@ fn main() {
     let mut parser = parser::Parser::new("./data/bin/S031413-v41.txt");
     for _ in 0..100 {
         parser.next().unwrap();
-        println!("\n{:?}", parser.current_message);
+        println!("\n{:?}", parser.get_current_message());
     }
 
     // TODO: implement logic for handling order messages
