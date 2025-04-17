@@ -3,6 +3,12 @@ use std::io::{Error, ErrorKind, Read, Result};
 use byteorder::{NetworkEndian, ReadBytesExt};
 
 #[derive(Debug, PartialEq)]
+pub enum Version {
+    V41, // Version 4.1
+    V50, // Version 5.0
+}
+
+#[derive(Debug, PartialEq)]
 pub enum EventCode {
     StartMessages,
     StartSystem,
@@ -63,6 +69,8 @@ pub enum Message {
 }
 
 pub trait ReadMessage: Read {
+    fn version(&self) -> &Version;
+
     fn read_size(&mut self) -> Result<u16> {
         self.read_u16::<NetworkEndian>()
     }

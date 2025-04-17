@@ -1,10 +1,11 @@
-mod parser;
+use lobsters::message::Version;
+use lobsters::parser::Parser;
 
 fn main() {
-    let mut parser = parser::Parser::new("./data/bin/S031413-v41.txt");
+    let mut parser = Parser::new("./data/bin/S031413-v41.txt", Version::V41);
     for _ in 0..100 {
-        parser.next().unwrap();
-        println!("\n{:?}", parser.get_current_message());
+        let msg = parser.get_next_message().unwrap();
+        println!("\n{:?}", msg);
     }
 
     // TODO: implement logic for handling order messages
