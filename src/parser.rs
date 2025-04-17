@@ -5,18 +5,18 @@ use super::message::{Message, ReadMessage, Version};
 
 pub struct Parser {
     version: Version,
-    cursor: Cursor<Vec<u8>>,
+    buffer: Cursor<Vec<u8>>,
 }
 
 impl Seek for Parser {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
-        self.cursor.seek(pos)
+        self.buffer.seek(pos)
     }
 }
 
 impl Read for Parser {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.cursor.read(buf)
+        self.buffer.read(buf)
     }
 }
 
@@ -30,10 +30,10 @@ impl Parser {
     pub fn new<P: AsRef<Path>>(filepath: P, version: Version) -> Self {
         // NOTE: The current approach loads the entire file content into memory
         // TODO: Read and process the file content in smaller chunks
-        let buffer = std::fs::read(filepath).expect("Unable to read file");
-        let cursor = Cursor::new(buffer);
+        let data = std::fs::read(filepath).expect("Unable to read file");
+        let buffer = Cursor::new(data);
 
-        Self { version, cursor }
+        Self { version, buffer }
     }
 
     pub fn get_next_message(&mut self) -> Result<Message> {
