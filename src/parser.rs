@@ -8,6 +8,12 @@ pub struct Parser {
     cursor: Cursor<Vec<u8>>,
 }
 
+impl Seek for Parser {
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+        self.cursor.seek(pos)
+    }
+}
+
 impl Read for Parser {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.cursor.read(buf)
@@ -159,7 +165,7 @@ impl Parser {
     fn skip_message(&mut self, size: u16) -> Result<()> {
         // NOTE: Assumes the message has been read up to the type byte
         let offset = (size - 1) as i64;
-        self.cursor.seek(SeekFrom::Current(offset))?;
+        self.seek(SeekFrom::Current(offset))?;
         Ok(())
     }
 }
