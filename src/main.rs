@@ -1,10 +1,10 @@
-use lobsters::message::Version;
-use lobsters::parser::Parser;
+use lobsters::{Buffer, Parser, Version};
 
 fn main() {
-    let mut parser = Parser::new("./data/bin/S031413-v41.txt", Version::V41);
+    let mut buffer = Buffer::new("./data/bin/S031413-v41.txt");
+    let parser = Parser::new(Version::V41);
     for _ in 0..100 {
-        let msg = parser.get_next_message().unwrap();
+        let msg = parser.extract_message(&mut buffer).unwrap();
         println!("\n{:?}", msg);
     }
 

@@ -1,171 +1,72 @@
-use std::io::{Cursor, Read, Result, Seek, SeekFrom};
-use std::path::Path;
+use std::io::Result;
 
+use byteorder::{NetworkEndian, ReadBytesExt};
+
+use super::buffer::Buffer;
+use super::message::{
+    AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent, Timestamp,
+};
 use super::message::{Message, ReadMessage, Version};
 
 pub struct Parser {
     version: Version,
-    buffer: Cursor<Vec<u8>>,
-}
-
-impl Seek for Parser {
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
-        self.buffer.seek(pos)
-    }
-}
-
-impl Read for Parser {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.buffer.read(buf)
-    }
-}
-
-impl ReadMessage for Parser {
-    fn version(&self) -> &Version {
-        &self.version
-    }
 }
 
 impl Parser {
-    pub fn new<P: AsRef<Path>>(filepath: P, version: Version) -> Self {
-        // NOTE: The current approach loads the entire file content into memory
-        // TODO: Read and process the file content in smaller chunks
-        let data = std::fs::read(filepath).expect("Unable to read file");
-        let buffer = Cursor::new(data);
-
-        Self { version, buffer }
+    pub fn new(version: Version) -> Self {
+        Self { version }
     }
 
-    pub fn get_next_message(&mut self) -> Result<Message> {
+    pub fn extract_message(&self, buffer: &mut Buffer) -> Result<Message> {
         loop {
             // TODO: Add logic to handle reaching the end of the buffer
-            let size = self.read_size()?;
-            let kind = self.read_kind()?;
+            let size = buffer.read_u16::<NetworkEndian>()?;
+            let kind = buffer.read_u8().map(char::from)?;
+
+            if let Version::V50 = self.version {
+                buffer.skip(32)?; // Discard stock locate and tracking number
+            }
 
             let msg = match kind {
-                'T' => self.parse_timestamp()?,
-                'S' => self.parse_system_event()?,
-                'A' => self.parse_add_order()?,
-                'E' => self.parse_execute_order()?,
-                'X' => self.parse_cancel_order()?,
-                'D' => self.parse_delete_order()?,
-                'U' => self.parse_replace_order()?,
+                'T' => {
+                    let data = Timestamp::read(buffer, &self.version)?;
+                    Some(Message::Timestamp(data))
+                }
+                'S' => {
+                    let data = SystemEvent::read(buffer, &self.version)?;
+                    Some(Message::SystemEvent(data))
+                }
+                'A' => {
+                    // TODO: Return `None` if the ticker is not a target
+                    let data = AddOrder::read(buffer, &self.version)?;
+                    Some(Message::AddOrder(data))
+                }
+                'E' => {
+                    let data = ExecuteOrder::read(buffer, &self.version)?;
+                    Some(Message::ExecuteOrder(data))
+                }
+                'X' => {
+                    let data = CancelOrder::read(buffer, &self.version)?;
+                    Some(Message::CancelOrder(data))
+                }
+                'D' => {
+                    let data = DeleteOrder::read(buffer, &self.version)?;
+                    Some(Message::DeleteOrder(data))
+                }
+                'U' => {
+                    let data = ReplaceOrder::read(buffer, &self.version)?;
+                    Some(Message::ReplaceOrder(data))
+                }
                 _ => None,
             };
 
             match msg {
                 Some(m) => return Ok(m),
                 None => {
-                    self.skip_message(size)?;
+                    buffer.skip(size)?;
                     continue;
                 }
             }
         }
-    }
-
-    fn parse_timestamp(&mut self) -> Result<Option<Message>> {
-        let seconds = self.read_seconds()?;
-
-        let message = Message::Timestamp { seconds };
-
-        Ok(Some(message))
-    }
-
-    fn parse_system_event(&mut self) -> Result<Option<Message>> {
-        let nanoseconds = self.read_nanoseconds()?;
-        let event_code = self.read_event_code()?;
-
-        let message = Message::SystemEvent {
-            nanoseconds,
-            event_code,
-        };
-
-        Ok(Some(message))
-    }
-
-    fn parse_add_order(&mut self) -> Result<Option<Message>> {
-        // TODO: Return `None` if the ticker is not a target
-
-        let nanoseconds = self.read_nanoseconds()?;
-        let refno = self.read_refno()?;
-        let side = self.read_side()?;
-        let shares = self.read_shares()?;
-        let ticker = self.read_ticker()?;
-        let price = self.read_price()?;
-
-        let message = Message::AddOrder {
-            nanoseconds,
-            refno,
-            side,
-            shares,
-            ticker,
-            price,
-        };
-
-        Ok(Some(message))
-    }
-
-    fn parse_execute_order(&mut self) -> Result<Option<Message>> {
-        let nanoseconds = self.read_nanoseconds()?;
-        let refno = self.read_refno()?;
-        let shares = self.read_shares()?;
-        let matchno = self.read_matchno()?;
-
-        let message = Message::ExecuteOrder {
-            nanoseconds,
-            refno,
-            shares,
-            matchno,
-        };
-
-        Ok(Some(message))
-    }
-
-    fn parse_cancel_order(&mut self) -> Result<Option<Message>> {
-        let nanoseconds = self.read_nanoseconds()?;
-        let refno = self.read_refno()?;
-        let shares = self.read_shares()?;
-
-        let message = Message::CancelOrder {
-            nanoseconds,
-            refno,
-            shares,
-        };
-
-        Ok(Some(message))
-    }
-
-    fn parse_delete_order(&mut self) -> Result<Option<Message>> {
-        let nanoseconds = self.read_nanoseconds()?;
-        let refno = self.read_refno()?;
-
-        let message = Message::DeleteOrder { nanoseconds, refno };
-
-        Ok(Some(message))
-    }
-
-    fn parse_replace_order(&mut self) -> Result<Option<Message>> {
-        let nanoseconds = self.read_nanoseconds()?;
-        let refno = self.read_refno()?;
-        let new_refno = self.read_new_refno()?;
-        let shares = self.read_shares()?;
-        let price = self.read_price()?;
-
-        let message = Message::ReplaceOrder {
-            nanoseconds,
-            refno,
-            new_refno,
-            shares,
-            price,
-        };
-
-        Ok(Some(message))
-    }
-
-    fn skip_message(&mut self, size: u16) -> Result<()> {
-        // NOTE: Assumes the message has been read up to the type byte
-        let offset = (size - 1) as i64;
-        self.seek(SeekFrom::Current(offset))?;
-        Ok(())
     }
 }
