@@ -1,38 +1,73 @@
-use std::io::{Cursor, Read, Result, Seek, SeekFrom};
+use std::fs::File;
+use std::io::{Cursor, Error, ErrorKind, Read, Result, Seek, SeekFrom};
 use std::path::Path;
 
-pub struct Buffer {
-    cursor: Cursor<Vec<u8>>,
+pub struct Buffer<const N: usize> {
+    file: File,
+    cursor: Cursor<[u8; N]>,
 }
 
-impl Read for Buffer {
+impl<const N: usize> Buffer<N> {
+    pub fn new<P: AsRef<Path>>(filepath: P) -> Result<Self> {
+        let mut file = File::open(filepath)?;
+        let mut inner = [0; N]; // Fixed-size "inner" buffer
+        file.read(&mut inner)?; // Initial load
+        let cursor = Cursor::new(inner);
+
+        Ok(Self { file, cursor })
+    }
+}
+
+impl<const N: usize> Read for Buffer<N> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        if buf.len() > N {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Cannot read data greater than the buffer size",
+            ));
+        }
+
+        let pos = self.cursor.position() as usize;
+        if pos + buf.len() > N {
+            let inner = self.cursor.get_mut();
+
+            // Move unread bytes to the front
+            let n = N - pos; // Number of unread bytes
+            for i in 0..n {
+                inner[i] = inner[pos + i];
+            }
+
+            // Refill the rest
+            self.file.read(&mut inner[n..])?;
+
+            // Complete reset
+            self.cursor.set_position(0);
+        }
+
         self.cursor.read(buf)
     }
 }
 
-impl Buffer {
-    pub fn new<P: AsRef<Path>>(filepath: P) -> Self {
-        // NOTE: The current approach loads the entire file content into memory
-        // TODO: Read and process the file content in smaller chunks
-        let data = std::fs::read(filepath).expect("Unable to read file");
-        let cursor = Cursor::new(data);
+impl<const N: usize> Seek for Buffer<N> {
+    fn seek(&mut self, style: SeekFrom) -> Result<u64> {
+        let target_pos = self.cursor.seek(style)?;
 
-        Self { cursor }
-    }
+        if target_pos < N as u64 {
+            Ok(target_pos)
+        } else {
+            let q = target_pos / N as u64; // Quotient
+            let r = target_pos % N as u64; // Remainder
 
-    pub fn skip(&mut self, size: u16) -> Result<()> {
-        let offset = size as i64;
-        self.cursor.seek(SeekFrom::Current(offset))?;
+            // Load new data
+            let inner = self.cursor.get_mut();
+            for _ in 0..q {
+                self.file.read(inner)?;
+            }
 
-        Ok(())
-    }
+            // Set new position
+            self.cursor.set_position(r);
 
-    pub fn get_position(&self) -> u64 {
-        self.cursor.position()
-    }
-
-    pub fn set_position(&mut self, new_position: u64) {
-        self.cursor.set_position(new_position);
+            Ok(r)
+        }
     }
 }

@@ -1,4 +1,4 @@
-use std::io::Result;
+use std::io::{Result, Seek, SeekFrom};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
 
@@ -18,7 +18,7 @@ impl Parser {
         Self { version, tickers }
     }
 
-    pub fn extract_message(&self, buffer: &mut Buffer) -> Result<Message> {
+    pub fn extract_message<const N: usize>(&self, buffer: &mut Buffer<N>) -> Result<Message> {
         loop {
             // TODO: Add logic to handle reaching the end of the buffer
             let size = buffer.read_u16::<NetworkEndian>()?;
@@ -67,18 +67,23 @@ impl Parser {
             match msg {
                 Some(m) => return Ok(m),
                 None => {
-                    buffer.skip(size - 1)?; // Message type has already been read
+                    let offset = (size - 1) as i64; // Message type has already been read
+                    buffer.seek(SeekFrom::Current(offset))?;
                     continue;
                 }
             }
         }
     }
 
-    fn glimpse_ticker_ahead(&self, buffer: &mut Buffer, ahead: u16) -> Result<String> {
-        let pos = buffer.get_position();
-        buffer.skip(ahead)?;
-        let ticker = read_ticker(buffer, &self.version)?;
-        buffer.set_position(pos); // Restore position in buffer
+    fn glimpse_ticker_ahead<const N: usize>(
+        &self,
+        buffer: &mut Buffer<N>,
+        ahead: usize,
+    ) -> Result<String> {
+        let offset = ahead as i64;
+        buffer.seek(SeekFrom::Current(offset))?;
+        let ticker = read_ticker(buffer, &self.version)?; // 8 bytes read
+        buffer.seek(SeekFrom::Current(-(offset + 8)))?; // Restore position in buffer
 
         Ok(ticker)
     }
