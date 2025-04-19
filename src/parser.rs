@@ -3,18 +3,19 @@ use std::io::Result;
 use byteorder::{NetworkEndian, ReadBytesExt};
 
 use super::buffer::Buffer;
+use super::message::{read_ticker, Message, ReadMessage, Version};
 use super::message::{
     AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent, Timestamp,
 };
-use super::message::{Message, ReadMessage, Version};
 
 pub struct Parser {
     version: Version,
+    tickers: Vec<String>,
 }
 
 impl Parser {
-    pub fn new(version: Version) -> Self {
-        Self { version }
+    pub fn new(version: Version, tickers: Vec<String>) -> Self {
+        Self { version, tickers }
     }
 
     pub fn extract_message(&self, buffer: &mut Buffer) -> Result<Message> {
@@ -33,9 +34,16 @@ impl Parser {
                     Some(Message::SystemEvent(data))
                 }
                 'A' => {
-                    // TODO: Return `None` if the ticker is not a target
-                    let data = AddOrder::read(buffer, &self.version)?;
-                    Some(Message::AddOrder(data))
+                    let ticker = match self.version {
+                        Version::V41 => self.glimpse_ticker_ahead(buffer, 17)?,
+                        Version::V50 => self.glimpse_ticker_ahead(buffer, 23)?,
+                    };
+                    if self.tickers.contains(&ticker) {
+                        let data = AddOrder::read(buffer, &self.version)?;
+                        Some(Message::AddOrder(data))
+                    } else {
+                        None
+                    }
                 }
                 'E' => {
                     let data = ExecuteOrder::read(buffer, &self.version)?;
@@ -64,5 +72,14 @@ impl Parser {
                 }
             }
         }
+    }
+
+    fn glimpse_ticker_ahead(&self, buffer: &mut Buffer, ahead: u16) -> Result<String> {
+        let pos = buffer.get_position();
+        buffer.skip(ahead)?;
+        let ticker = read_ticker(buffer, &self.version)?;
+        buffer.set_position(pos); // Restore position in buffer
+
+        Ok(ticker)
     }
 }

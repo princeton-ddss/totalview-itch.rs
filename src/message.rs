@@ -167,7 +167,7 @@ fn read_event_code(buffer: &mut Buffer, _version: &Version) -> Result<EventCode>
     Ok(event_code)
 }
 
-fn read_ticker(buffer: &mut Buffer, _version: &Version) -> Result<String> {
+pub fn read_ticker(buffer: &mut Buffer, _version: &Version) -> Result<String> {
     let mut buf = vec![0; 8];
     buffer.read_exact(&mut buf)?;
     match String::from_utf8(buf) {

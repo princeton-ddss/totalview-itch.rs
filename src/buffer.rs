@@ -27,4 +27,12 @@ impl Buffer {
 
         Ok(())
     }
+
+    pub fn get_position(&self) -> u64 {
+        self.cursor.position()
+    }
+
+    pub fn set_position(&mut self, new_position: u64) {
+        self.cursor.set_position(new_position);
+    }
 }

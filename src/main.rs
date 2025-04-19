@@ -1,10 +1,15 @@
 use lobsters::{Buffer, Parser, Version};
 
 fn main() {
+    let tickers = ["SHV", "TEF", "STM"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+
     // let mut buffer = Buffer::new("./data/bin/S031413-v41.txt");
-    // let parser = Parser::new(Version::V41);
+    // let parser = Parser::new(Version::V41, tickers);
     let mut buffer = Buffer::new("./data/bin/S022717-v50.txt");
-    let parser = Parser::new(Version::V50);
+    let parser = Parser::new(Version::V50, tickers);
 
     for _ in 0..100 {
         let msg = parser.extract_message(&mut buffer).unwrap();
