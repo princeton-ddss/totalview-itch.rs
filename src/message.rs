@@ -170,7 +170,7 @@ fn read_ticker(buffer: &mut Buffer, _version: &Version) -> Result<String> {
     let mut buf = vec![0; 8];
     buffer.read_exact(&mut buf)?;
     match String::from_utf8(buf) {
-        Ok(s) => Ok(s),
+        Ok(s) => Ok(s.trim().to_string()),
         Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
     }
 }
