@@ -123,11 +123,11 @@ fn read_refno(buffer: &mut Buffer, _version: &Version) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_new_refno(buffer: &mut Buffer, version: &Version) -> Result<u64> {
+fn read_new_refno(buffer: &mut Buffer, _version: &Version) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_matchno(buffer: &mut Buffer, version: &Version) -> Result<u64> {
+fn read_matchno(buffer: &mut Buffer, _version: &Version) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
@@ -145,7 +145,7 @@ fn read_side(buffer: &mut Buffer, _version: &Version) -> Result<Side> {
     Ok(side)
 }
 
-fn read_event_code(buffer: &mut Buffer, version: &Version) -> Result<EventCode> {
+fn read_event_code(buffer: &mut Buffer, _version: &Version) -> Result<EventCode> {
     let event_code = match buffer.read_u8().map(char::from)? {
         'O' => EventCode::StartMessages,
         'S' => EventCode::StartSystem,
