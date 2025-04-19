@@ -23,10 +23,6 @@ impl Parser {
             let size = buffer.read_u16::<NetworkEndian>()?;
             let kind = buffer.read_u8().map(char::from)?;
 
-            if let Version::V50 = self.version {
-                buffer.skip(32)?; // Discard stock locate and tracking number
-            }
-
             let msg = match kind {
                 'T' => {
                     let data = Timestamp::read(buffer, &self.version)?;
@@ -63,7 +59,7 @@ impl Parser {
             match msg {
                 Some(m) => return Ok(m),
                 None => {
-                    buffer.skip(size)?;
+                    buffer.skip(size - 1)?; // Message type has already been read
                     continue;
                 }
             }

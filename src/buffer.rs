@@ -5,12 +5,6 @@ pub struct Buffer {
     cursor: Cursor<Vec<u8>>,
 }
 
-impl Seek for Buffer {
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
-        self.cursor.seek(pos)
-    }
-}
-
 impl Read for Buffer {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.cursor.read(buf)
@@ -28,8 +22,8 @@ impl Buffer {
     }
 
     pub fn skip(&mut self, size: u16) -> Result<()> {
-        let offset = (size - 1) as i64;
-        self.seek(SeekFrom::Current(offset))?;
+        let offset = size as i64;
+        self.cursor.seek(SeekFrom::Current(offset))?;
 
         Ok(())
     }

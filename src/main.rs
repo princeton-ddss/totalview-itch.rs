@@ -1,8 +1,11 @@
 use lobsters::{Buffer, Parser, Version};
 
 fn main() {
-    let mut buffer = Buffer::new("./data/bin/S031413-v41.txt");
-    let parser = Parser::new(Version::V41);
+    // let mut buffer = Buffer::new("./data/bin/S031413-v41.txt");
+    // let parser = Parser::new(Version::V41);
+    let mut buffer = Buffer::new("./data/bin/S022717-v50.txt");
+    let parser = Parser::new(Version::V50);
+
     for _ in 0..100 {
         let msg = parser.extract_message(&mut buffer).unwrap();
         println!("\n{:?}", msg);

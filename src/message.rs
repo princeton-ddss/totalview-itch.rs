@@ -95,13 +95,14 @@ pub enum Message {
 }
 
 fn read_seconds(buffer: &mut Buffer, version: &Version) -> Result<u32> {
-    match version {
-        Version::V41 => buffer.read_u32::<NetworkEndian>(),
-        _ => Err(Error::new(
+    if version != &Version::V41 {
+        return Err(Error::new(
             ErrorKind::InvalidInput,
             format!("{version} does not include <seconds> property"),
-        )),
+        ));
     }
+
+    buffer.read_u32::<NetworkEndian>()
 }
 
 fn read_nanoseconds(buffer: &mut Buffer, version: &Version) -> Result<u64> {
@@ -181,6 +182,13 @@ pub trait ReadMessage: Sized {
 
 impl ReadMessage for Timestamp {
     fn read(buffer: &mut Buffer, version: &Version) -> Result<Self> {
+        if version != &Version::V41 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!("{version} does not support <Timestamp> message"),
+            ));
+        }
+
         let seconds = read_seconds(buffer, version)?;
 
         Ok(Self { seconds })
@@ -189,6 +197,10 @@ impl ReadMessage for Timestamp {
 
 impl ReadMessage for SystemEvent {
     fn read(buffer: &mut Buffer, version: &Version) -> Result<Self> {
+        if version == &Version::V50 {
+            buffer.skip(4)?; // Discard stock locate and tracking number
+        }
+
         let nanoseconds = read_nanoseconds(buffer, version)?;
         let event_code = read_event_code(buffer, version)?;
 
@@ -201,6 +213,10 @@ impl ReadMessage for SystemEvent {
 
 impl ReadMessage for AddOrder {
     fn read(buffer: &mut Buffer, version: &Version) -> Result<Self> {
+        if version == &Version::V50 {
+            buffer.skip(4)?; // Discard stock locate and tracking number
+        }
+
         let nanoseconds = read_nanoseconds(buffer, version)?;
         let refno = read_refno(buffer, version)?;
         let side = read_side(buffer, version)?;
@@ -221,6 +237,10 @@ impl ReadMessage for AddOrder {
 
 impl ReadMessage for ExecuteOrder {
     fn read(buffer: &mut Buffer, version: &Version) -> Result<Self> {
+        if version == &Version::V50 {
+            buffer.skip(4)?; // Discard stock locate and tracking number
+        }
+
         let nanoseconds = read_nanoseconds(buffer, version)?;
         let refno = read_refno(buffer, version)?;
         let shares = read_shares(buffer, version)?;
@@ -237,6 +257,10 @@ impl ReadMessage for ExecuteOrder {
 
 impl ReadMessage for CancelOrder {
     fn read(buffer: &mut Buffer, version: &Version) -> Result<Self> {
+        if version == &Version::V50 {
+            buffer.skip(4)?; // Discard stock locate and tracking number
+        }
+
         let nanoseconds = read_nanoseconds(buffer, version)?;
         let refno = read_refno(buffer, version)?;
         let shares = read_shares(buffer, version)?;
@@ -251,6 +275,10 @@ impl ReadMessage for CancelOrder {
 
 impl ReadMessage for DeleteOrder {
     fn read(buffer: &mut Buffer, version: &Version) -> Result<Self> {
+        if version == &Version::V50 {
+            buffer.skip(4)?; // Discard stock locate and tracking number
+        }
+
         let nanoseconds = read_nanoseconds(buffer, version)?;
         let refno = read_refno(buffer, version)?;
 
@@ -260,6 +288,10 @@ impl ReadMessage for DeleteOrder {
 
 impl ReadMessage for ReplaceOrder {
     fn read(buffer: &mut Buffer, version: &Version) -> Result<Self> {
+        if version == &Version::V50 {
+            buffer.skip(4)?; // Discard stock locate and tracking number
+        }
+
         let nanoseconds = read_nanoseconds(buffer, version)?;
         let refno = read_refno(buffer, version)?;
         let new_refno = read_new_refno(buffer, version)?;
