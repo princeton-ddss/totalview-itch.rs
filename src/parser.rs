@@ -20,7 +20,7 @@ impl Parser {
 
     pub fn extract_message<const N: usize>(&self, buffer: &mut Buffer<N>) -> Result<Message> {
         loop {
-            // TODO: Add logic to handle reaching the end of the buffer
+            // TODO: Add logic to handle reaching EOF
             let size = buffer.read_u16::<NetworkEndian>()?;
             let kind = buffer.read_u8().map(char::from)?;
 
