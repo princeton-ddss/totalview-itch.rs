@@ -40,7 +40,7 @@ impl<const N: usize> Read for Buffer<N> {
             // Refill the rest
             self.file.read(&mut inner[n..])?;
 
-            // Complete reset
+            // Set new position
             self.cursor.set_position(0);
         }
 
@@ -50,24 +50,36 @@ impl<const N: usize> Read for Buffer<N> {
 
 impl<const N: usize> Seek for Buffer<N> {
     fn seek(&mut self, style: SeekFrom) -> Result<u64> {
+        let pos = self.cursor.position();
         let target_pos = self.cursor.seek(style)?;
 
         if target_pos < N as u64 {
             Ok(target_pos)
         } else {
-            let q = target_pos / N as u64; // Quotient
-            let r = target_pos % N as u64; // Remainder
+            let d = target_pos - pos; // Seek distance
 
-            // Load new data
-            let inner = self.cursor.get_mut();
-            for _ in 0..q {
-                self.file.read(inner)?;
+            if d >= N as u64 {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "Seek distance cannot exceed the buffer size",
+                ));
             }
 
-            // Set new position
-            self.cursor.set_position(r);
+            let inner = self.cursor.get_mut();
 
-            Ok(r)
+            // Move skipped bytes to the front (to support "lookahead and rollback")
+            let n = N - pos as usize; // Number of skipped bytes
+            for i in 0..n {
+                inner[i] = inner[pos as usize + i];
+            }
+
+            // Refill the rest
+            self.file.read(&mut inner[n..])?;
+
+            // Set new position
+            self.cursor.set_position(d);
+
+            Ok(d)
         }
     }
 }

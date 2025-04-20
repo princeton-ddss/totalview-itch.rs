@@ -80,10 +80,13 @@ impl Parser {
         buffer: &mut Buffer<N>,
         ahead: usize,
     ) -> Result<String> {
-        let offset = ahead as i64;
-        buffer.seek(SeekFrom::Current(offset))?;
-        let ticker = read_ticker(buffer, &self.version)?; // 8 bytes read
-        buffer.seek(SeekFrom::Current(-(offset + 8)))?; // Restore position in buffer
+        let ticker_size = 8;
+        let offset = (ahead + ticker_size) as i64;
+
+        buffer.seek(SeekFrom::Current(offset))?; // Look ahead enough for rollback to work properly
+        buffer.seek(SeekFrom::Current(-(ticker_size as i64)))?;
+        let ticker = read_ticker(buffer, &self.version)?;
+        buffer.seek(SeekFrom::Current(-offset))?; // Restore position in buffer
 
         Ok(ticker)
     }
