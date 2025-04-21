@@ -16,6 +16,25 @@ impl<const N: usize> Buffer<N> {
 
         Ok(Self { file, cursor })
     }
+
+    fn refill(&mut self) -> Result<()> {
+        let pos = self.cursor.position() as usize;
+        let inner = self.cursor.get_mut();
+
+        // Move unread bytes to the front
+        let n = N - pos; // Number of unread bytes
+        for i in 0..n {
+            inner[i] = inner[pos + i];
+        }
+
+        // Refill the rest
+        self.file.read(&mut inner[n..])?;
+
+        // Reset the position
+        self.cursor.set_position(0);
+
+        Ok(())
+    }
 }
 
 impl<const N: usize> Read for Buffer<N> {
@@ -28,20 +47,9 @@ impl<const N: usize> Read for Buffer<N> {
         }
 
         let pos = self.cursor.position() as usize;
+
         if pos + buf.len() > N {
-            let inner = self.cursor.get_mut();
-
-            // Move unread bytes to the front
-            let n = N - pos; // Number of unread bytes
-            for i in 0..n {
-                inner[i] = inner[pos + i];
-            }
-
-            // Refill the rest
-            self.file.read(&mut inner[n..])?;
-
-            // Set new position
-            self.cursor.set_position(0);
+            self.refill()?;
         }
 
         self.cursor.read(buf)
@@ -65,18 +73,10 @@ impl<const N: usize> Seek for Buffer<N> {
                 ));
             }
 
-            let inner = self.cursor.get_mut();
+            self.cursor.set_position(pos);
 
-            // Move skipped bytes to the front (to support "lookahead and rollback")
-            let n = N - pos as usize; // Number of skipped bytes
-            for i in 0..n {
-                inner[i] = inner[pos as usize + i];
-            }
+            self.refill()?;
 
-            // Refill the rest
-            self.file.read(&mut inner[n..])?;
-
-            // Set new position
             self.cursor.set_position(d);
 
             Ok(d)
