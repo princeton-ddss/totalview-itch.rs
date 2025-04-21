@@ -1,9 +1,36 @@
-use std::io::{Error, ErrorKind, Read, Result, Seek, SeekFrom};
+mod add_order;
+mod cancel_order;
+mod delete_order;
+mod execute_order;
+mod replace_order;
+mod system_event;
+mod timestamp;
+
+use std::io::{Error, ErrorKind, Read, Result};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
 use strum_macros::Display;
 
-use super::buffer::Buffer;
+use crate::buffer::Buffer;
+
+pub use add_order::AddOrder;
+pub use cancel_order::CancelOrder;
+pub use delete_order::DeleteOrder;
+pub use execute_order::ExecuteOrder;
+pub use replace_order::ReplaceOrder;
+pub use system_event::SystemEvent;
+pub use timestamp::Timestamp;
+
+#[derive(Debug)]
+pub enum Message {
+    Timestamp(Timestamp),
+    SystemEvent(SystemEvent),
+    AddOrder(AddOrder),
+    ExecuteOrder(ExecuteOrder),
+    CancelOrder(CancelOrder),
+    DeleteOrder(DeleteOrder),
+    ReplaceOrder(ReplaceOrder),
+}
 
 #[derive(Debug, PartialEq, Display)]
 pub enum Version {
@@ -32,66 +59,8 @@ pub enum Side {
     Sell,
 }
 
-#[derive(Debug)]
-pub struct Timestamp {
-    seconds: u32,
-}
-
-#[derive(Debug)]
-pub struct SystemEvent {
-    nanoseconds: u64,
-    event_code: EventCode,
-}
-
-#[derive(Debug)]
-pub struct AddOrder {
-    nanoseconds: u64,
-    refno: u64,
-    side: Side,
-    shares: u32,
-    ticker: String,
-    price: u32,
-}
-
-#[derive(Debug)]
-pub struct ExecuteOrder {
-    nanoseconds: u64,
-    refno: u64,
-    shares: u32,
-    matchno: u64,
-}
-
-#[derive(Debug)]
-pub struct CancelOrder {
-    nanoseconds: u64,
-    refno: u64,
-    shares: u32,
-}
-
-#[derive(Debug)]
-pub struct DeleteOrder {
-    nanoseconds: u64,
-    refno: u64,
-}
-
-#[derive(Debug)]
-pub struct ReplaceOrder {
-    nanoseconds: u64,
-    refno: u64,
-    new_refno: u64,
-    shares: u32,
-    price: u32,
-}
-
-#[derive(Debug)]
-pub enum Message {
-    Timestamp(Timestamp),
-    SystemEvent(SystemEvent),
-    AddOrder(AddOrder),
-    ExecuteOrder(ExecuteOrder),
-    CancelOrder(CancelOrder),
-    DeleteOrder(DeleteOrder),
-    ReplaceOrder(ReplaceOrder),
+pub trait ReadMessage: Sized {
+    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self>;
 }
 
 fn read_seconds<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<u32> {
@@ -176,137 +145,5 @@ pub fn read_ticker<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -
     match String::from_utf8(buf) {
         Ok(s) => Ok(s.trim().to_string()),
         Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
-    }
-}
-
-pub trait ReadMessage: Sized {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self>;
-}
-
-impl ReadMessage for Timestamp {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
-        if version != &Version::V41 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!("{version} does not support <Timestamp> message"),
-            ));
-        }
-
-        let seconds = read_seconds(buffer, version)?;
-
-        Ok(Self { seconds })
-    }
-}
-
-impl ReadMessage for SystemEvent {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
-        if version == &Version::V50 {
-            buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
-        }
-
-        let nanoseconds = read_nanoseconds(buffer, version)?;
-        let event_code = read_event_code(buffer, version)?;
-
-        Ok(Self {
-            nanoseconds,
-            event_code,
-        })
-    }
-}
-
-impl ReadMessage for AddOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
-        if version == &Version::V50 {
-            buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
-        }
-
-        let nanoseconds = read_nanoseconds(buffer, version)?;
-        let refno = read_refno(buffer, version)?;
-        let side = read_side(buffer, version)?;
-        let shares = read_shares(buffer, version)?;
-        let ticker = read_ticker(buffer, version)?;
-        let price = read_price(buffer, version)?;
-
-        Ok(Self {
-            nanoseconds,
-            refno,
-            side,
-            shares,
-            ticker,
-            price,
-        })
-    }
-}
-
-impl ReadMessage for ExecuteOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
-        if version == &Version::V50 {
-            buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
-        }
-
-        let nanoseconds = read_nanoseconds(buffer, version)?;
-        let refno = read_refno(buffer, version)?;
-        let shares = read_shares(buffer, version)?;
-        let matchno = read_matchno(buffer, version)?;
-
-        Ok(Self {
-            nanoseconds,
-            refno,
-            shares,
-            matchno,
-        })
-    }
-}
-
-impl ReadMessage for CancelOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
-        if version == &Version::V50 {
-            buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
-        }
-
-        let nanoseconds = read_nanoseconds(buffer, version)?;
-        let refno = read_refno(buffer, version)?;
-        let shares = read_shares(buffer, version)?;
-
-        Ok(Self {
-            nanoseconds,
-            refno,
-            shares,
-        })
-    }
-}
-
-impl ReadMessage for DeleteOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
-        if version == &Version::V50 {
-            buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
-        }
-
-        let nanoseconds = read_nanoseconds(buffer, version)?;
-        let refno = read_refno(buffer, version)?;
-
-        Ok(Self { nanoseconds, refno })
-    }
-}
-
-impl ReadMessage for ReplaceOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
-        if version == &Version::V50 {
-            buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
-        }
-
-        let nanoseconds = read_nanoseconds(buffer, version)?;
-        let refno = read_refno(buffer, version)?;
-        let new_refno = read_new_refno(buffer, version)?;
-        let shares = read_shares(buffer, version)?;
-        let price = read_price(buffer, version)?;
-
-        Ok(Self {
-            nanoseconds,
-            refno,
-            new_refno,
-            shares,
-            price,
-        })
     }
 }
