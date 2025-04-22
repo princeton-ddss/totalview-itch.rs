@@ -22,7 +22,7 @@ impl ReadMessage for DeleteOrder {
         }
 
         let nanoseconds = read_nanoseconds(buffer, version, clock)?;
-        let refno = read_refno(buffer, version)?;
+        let refno = read_refno(buffer)?;
 
         Ok(Self { nanoseconds, refno })
     }

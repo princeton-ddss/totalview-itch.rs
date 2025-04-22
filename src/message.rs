@@ -79,27 +79,27 @@ fn read_nanoseconds<const N: usize>(
     }
 }
 
-fn read_shares<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Result<u32> {
+fn read_shares<const N: usize>(buffer: &mut Buffer<N>) -> Result<u32> {
     buffer.read_u32::<NetworkEndian>()
 }
 
-fn read_price<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Result<u32> {
+fn read_price<const N: usize>(buffer: &mut Buffer<N>) -> Result<u32> {
     buffer.read_u32::<NetworkEndian>()
 }
 
-fn read_refno<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Result<u64> {
+fn read_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_new_refno<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Result<u64> {
+fn read_new_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_matchno<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Result<u64> {
+fn read_matchno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_side<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Result<Side> {
+fn read_side<const N: usize>(buffer: &mut Buffer<N>) -> Result<Side> {
     let side = match buffer.read_u8().map(char::from)? {
         'B' => Side::Buy,
         'S' => Side::Sell,
@@ -113,10 +113,7 @@ fn read_side<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Resu
     Ok(side)
 }
 
-fn read_event_code<const N: usize>(
-    buffer: &mut Buffer<N>,
-    _version: &Version,
-) -> Result<EventCode> {
+fn read_event_code<const N: usize>(buffer: &mut Buffer<N>) -> Result<EventCode> {
     let event_code = match buffer.read_u8().map(char::from)? {
         'O' => EventCode::StartMessages,
         'S' => EventCode::StartSystem,
@@ -137,7 +134,7 @@ fn read_event_code<const N: usize>(
     Ok(event_code)
 }
 
-pub fn read_ticker<const N: usize>(buffer: &mut Buffer<N>, _version: &Version) -> Result<String> {
+pub fn read_ticker<const N: usize>(buffer: &mut Buffer<N>) -> Result<String> {
     let mut buf = vec![0; 8];
     buffer.read_exact(&mut buf)?;
     match String::from_utf8(buf) {

@@ -23,8 +23,8 @@ impl ReadMessage for CancelOrder {
         }
 
         let nanoseconds = read_nanoseconds(buffer, version, clock)?;
-        let refno = read_refno(buffer, version)?;
-        let shares = read_shares(buffer, version)?;
+        let refno = read_refno(buffer)?;
+        let shares = read_shares(buffer)?;
 
         Ok(Self {
             nanoseconds,

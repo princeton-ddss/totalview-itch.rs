@@ -26,11 +26,11 @@ impl ReadMessage for AddOrder {
         }
 
         let nanoseconds = read_nanoseconds(buffer, version, clock)?;
-        let refno = read_refno(buffer, version)?;
-        let side = read_side(buffer, version)?;
-        let shares = read_shares(buffer, version)?;
-        let ticker = read_ticker(buffer, version)?;
-        let price = read_price(buffer, version)?;
+        let refno = read_refno(buffer)?;
+        let side = read_side(buffer)?;
+        let shares = read_shares(buffer)?;
+        let ticker = read_ticker(buffer)?;
+        let price = read_price(buffer)?;
 
         Ok(Self {
             nanoseconds,

@@ -22,7 +22,7 @@ impl ReadMessage for SystemEvent {
         }
 
         let nanoseconds = read_nanoseconds(buffer, version, clock)?;
-        let event_code = read_event_code(buffer, version)?;
+        let event_code = read_event_code(buffer)?;
 
         Ok(Self {
             nanoseconds,

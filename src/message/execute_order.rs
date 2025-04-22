@@ -24,9 +24,9 @@ impl ReadMessage for ExecuteOrder {
         }
 
         let nanoseconds = read_nanoseconds(buffer, version, clock)?;
-        let refno = read_refno(buffer, version)?;
-        let shares = read_shares(buffer, version)?;
-        let matchno = read_matchno(buffer, version)?;
+        let refno = read_refno(buffer)?;
+        let shares = read_shares(buffer)?;
+        let matchno = read_matchno(buffer)?;
 
         Ok(Self {
             nanoseconds,

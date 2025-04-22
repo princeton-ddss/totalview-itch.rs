@@ -39,8 +39,8 @@ impl Parser {
                 }
                 'A' => {
                     let ticker = match self.version {
-                        Version::V41 => self.glimpse_ticker_ahead(buffer, 17)?,
-                        Version::V50 => self.glimpse_ticker_ahead(buffer, 23)?,
+                        Version::V41 => Self::glimpse_ticker_ahead(buffer, 17)?,
+                        Version::V50 => Self::glimpse_ticker_ahead(buffer, 23)?,
                     };
                     if self.tickers.contains(&ticker) {
                         let data = AddOrder::read(buffer, &self.version, self.clock)?;
@@ -80,7 +80,6 @@ impl Parser {
     }
 
     fn glimpse_ticker_ahead<const N: usize>(
-        &self,
         buffer: &mut Buffer<N>,
         ahead: usize,
     ) -> Result<String> {
@@ -89,7 +88,7 @@ impl Parser {
 
         buffer.seek(SeekFrom::Current(offset))?; // Look ahead enough for rollback to work properly
         buffer.seek(SeekFrom::Current(-(ticker_size as i64)))?;
-        let ticker = read_ticker(buffer, &self.version)?;
+        let ticker = read_ticker(buffer)?;
         buffer.seek(SeekFrom::Current(-offset))?; // Restore position in buffer
 
         Ok(ticker)
