@@ -27,12 +27,13 @@ impl Parser {
             let size = buffer.read_u16::<NetworkEndian>()?;
             let kind = buffer.read_u8().map(char::from)?;
 
+            if kind == 'T' {
+                let seconds = buffer.read_u32::<NetworkEndian>()?;
+                self.clock = Some(seconds);
+                continue;
+            }
+
             let msg = match kind {
-                'T' => {
-                    let seconds = buffer.read_u32::<NetworkEndian>()?;
-                    self.clock = Some(seconds);
-                    continue;
-                }
                 'S' => {
                     let data = SystemEvent::read(buffer, &self.version, self.clock)?;
                     Some(Message::SystemEvent(data))
