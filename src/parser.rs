@@ -4,21 +4,24 @@ use byteorder::{NetworkEndian, ReadBytesExt};
 
 use super::buffer::Buffer;
 use super::message::{read_ticker, Message, ReadMessage, Version};
-use super::message::{
-    AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent, Timestamp,
-};
+use super::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent};
 
 pub struct Parser {
     version: Version,
     tickers: Vec<String>,
+    clock: Option<u32>, // Tracks number of seconds past midnight (applicable for Version 4.1)
 }
 
 impl Parser {
     pub fn new(version: Version, tickers: Vec<String>) -> Self {
-        Self { version, tickers }
+        Self {
+            version,
+            tickers,
+            clock: None,
+        }
     }
 
-    pub fn extract_message<const N: usize>(&self, buffer: &mut Buffer<N>) -> Result<Message> {
+    pub fn extract_message<const N: usize>(&mut self, buffer: &mut Buffer<N>) -> Result<Message> {
         loop {
             // TODO: Add logic to handle reaching EOF
             let size = buffer.read_u16::<NetworkEndian>()?;
@@ -26,11 +29,12 @@ impl Parser {
 
             let msg = match kind {
                 'T' => {
-                    let data = Timestamp::read(buffer, &self.version)?;
-                    Some(Message::Timestamp(data))
+                    let seconds = buffer.read_u32::<NetworkEndian>()?;
+                    self.clock = Some(seconds);
+                    continue;
                 }
                 'S' => {
-                    let data = SystemEvent::read(buffer, &self.version)?;
+                    let data = SystemEvent::read(buffer, &self.version, self.clock)?;
                     Some(Message::SystemEvent(data))
                 }
                 'A' => {
@@ -39,26 +43,26 @@ impl Parser {
                         Version::V50 => self.glimpse_ticker_ahead(buffer, 23)?,
                     };
                     if self.tickers.contains(&ticker) {
-                        let data = AddOrder::read(buffer, &self.version)?;
+                        let data = AddOrder::read(buffer, &self.version, self.clock)?;
                         Some(Message::AddOrder(data))
                     } else {
                         None
                     }
                 }
                 'E' => {
-                    let data = ExecuteOrder::read(buffer, &self.version)?;
+                    let data = ExecuteOrder::read(buffer, &self.version, self.clock)?;
                     Some(Message::ExecuteOrder(data))
                 }
                 'X' => {
-                    let data = CancelOrder::read(buffer, &self.version)?;
+                    let data = CancelOrder::read(buffer, &self.version, self.clock)?;
                     Some(Message::CancelOrder(data))
                 }
                 'D' => {
-                    let data = DeleteOrder::read(buffer, &self.version)?;
+                    let data = DeleteOrder::read(buffer, &self.version, self.clock)?;
                     Some(Message::DeleteOrder(data))
                 }
                 'U' => {
-                    let data = ReplaceOrder::read(buffer, &self.version)?;
+                    let data = ReplaceOrder::read(buffer, &self.version, self.clock)?;
                     Some(Message::ReplaceOrder(data))
                 }
                 _ => None,

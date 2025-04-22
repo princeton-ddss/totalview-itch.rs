@@ -14,12 +14,16 @@ pub struct ExecuteOrder {
 }
 
 impl ReadMessage for ExecuteOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
+    fn read<const N: usize>(
+        buffer: &mut Buffer<N>,
+        version: &Version,
+        clock: Option<u32>,
+    ) -> Result<Self> {
         if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
 
-        let nanoseconds = read_nanoseconds(buffer, version)?;
+        let nanoseconds = read_nanoseconds(buffer, version, clock)?;
         let refno = read_refno(buffer, version)?;
         let shares = read_shares(buffer, version)?;
         let matchno = read_matchno(buffer, version)?;

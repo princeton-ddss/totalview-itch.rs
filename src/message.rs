@@ -4,7 +4,6 @@ mod delete_order;
 mod execute_order;
 mod replace_order;
 mod system_event;
-mod timestamp;
 
 use std::io::{Error, ErrorKind, Read, Result};
 
@@ -19,11 +18,9 @@ pub use delete_order::DeleteOrder;
 pub use execute_order::ExecuteOrder;
 pub use replace_order::ReplaceOrder;
 pub use system_event::SystemEvent;
-pub use timestamp::Timestamp;
 
 #[derive(Debug)]
 pub enum Message {
-    Timestamp(Timestamp),
     SystemEvent(SystemEvent),
     AddOrder(AddOrder),
     ExecuteOrder(ExecuteOrder),
@@ -60,23 +57,24 @@ pub enum Side {
 }
 
 pub trait ReadMessage: Sized {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self>;
+    fn read<const N: usize>(
+        buffer: &mut Buffer<N>,
+        version: &Version,
+        clock: Option<u32>,
+    ) -> Result<Self>;
 }
 
-fn read_seconds<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<u32> {
-    if version != &Version::V41 {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            format!("{version} does not include <seconds> property"),
-        ));
-    }
-
-    buffer.read_u32::<NetworkEndian>()
-}
-
-fn read_nanoseconds<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<u64> {
+fn read_nanoseconds<const N: usize>(
+    buffer: &mut Buffer<N>,
+    version: &Version,
+    clock: Option<u32>,
+) -> Result<u64> {
     match version {
-        Version::V41 => buffer.read_u32::<NetworkEndian>().map(|n| n as u64),
+        Version::V41 => {
+            let seconds = clock.expect("Clock info missing");
+            let nanoseconds = buffer.read_u32::<NetworkEndian>()?;
+            Ok((seconds as u64) * 1_000_000_000 + (nanoseconds as u64))
+        }
         Version::V50 => buffer.read_u48::<NetworkEndian>(),
     }
 }

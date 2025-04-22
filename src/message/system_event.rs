@@ -12,12 +12,16 @@ pub struct SystemEvent {
 }
 
 impl ReadMessage for SystemEvent {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
+    fn read<const N: usize>(
+        buffer: &mut Buffer<N>,
+        version: &Version,
+        clock: Option<u32>,
+    ) -> Result<Self> {
         if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
 
-        let nanoseconds = read_nanoseconds(buffer, version)?;
+        let nanoseconds = read_nanoseconds(buffer, version, clock)?;
         let event_code = read_event_code(buffer, version)?;
 
         Ok(Self {

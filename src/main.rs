@@ -8,7 +8,7 @@ fn main() {
         .map(|s| s.to_string())
         .collect();
 
-    let parser = Parser::new(Version::V50, tickers);
+    let mut parser = Parser::new(Version::V50, tickers);
 
     for _ in 0..100 {
         let msg = parser.extract_message(&mut buffer).unwrap();

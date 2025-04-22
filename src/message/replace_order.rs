@@ -15,12 +15,16 @@ pub struct ReplaceOrder {
 }
 
 impl ReadMessage for ReplaceOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, version: &Version) -> Result<Self> {
+    fn read<const N: usize>(
+        buffer: &mut Buffer<N>,
+        version: &Version,
+        clock: Option<u32>,
+    ) -> Result<Self> {
         if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
 
-        let nanoseconds = read_nanoseconds(buffer, version)?;
+        let nanoseconds = read_nanoseconds(buffer, version, clock)?;
         let refno = read_refno(buffer, version)?;
         let new_refno = read_new_refno(buffer, version)?;
         let shares = read_shares(buffer, version)?;
