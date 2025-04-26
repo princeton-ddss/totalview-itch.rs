@@ -16,12 +16,16 @@ pub struct AddOrder {
 }
 
 impl ReadMessage for AddOrder {
-    fn read<const N: usize>(buffer: &mut Buffer<N>, context: &Context) -> Result<Self> {
-        if context.version == Version::V50 {
+    fn read<const N: usize>(
+        buffer: &mut Buffer<N>,
+        version: &Version,
+        context: &Context,
+    ) -> Result<Self> {
+        if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
 
-        let nanoseconds = read_nanoseconds(buffer, &context.version, context.clock)?;
+        let nanoseconds = read_nanoseconds(buffer, version, context.clock)?;
         let refno = read_refno(buffer)?;
         let side = read_side(buffer)?;
         let shares = read_shares(buffer)?;

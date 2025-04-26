@@ -7,18 +7,20 @@ use super::message::{read_ticker, Context, Message, ReadMessage, Version};
 use super::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent};
 
 pub struct Parser {
+    version: Version,
     tickers: Vec<String>,
     context: Context,
 }
 
 impl Parser {
     pub fn new(version: Version, tickers: Vec<String>) -> Self {
-        let context = Context {
-            version,
-            clock: None,
-        };
+        let context = Context { clock: None };
 
-        Self { tickers, context }
+        Self {
+            version,
+            tickers,
+            context,
+        }
     }
 
     pub fn extract_message<const N: usize>(&mut self, buffer: &mut Buffer<N>) -> Result<Message> {
@@ -35,35 +37,35 @@ impl Parser {
 
             let msg = match kind {
                 'S' => {
-                    let data = SystemEvent::read(buffer, &self.context)?;
+                    let data = SystemEvent::read(buffer, &self.version, &self.context)?;
                     Some(Message::SystemEvent(data))
                 }
                 'A' => {
-                    let ticker = match self.context.version {
+                    let ticker = match self.version {
                         Version::V41 => Self::glimpse_ticker_ahead(buffer, 17)?,
                         Version::V50 => Self::glimpse_ticker_ahead(buffer, 23)?,
                     };
                     if self.tickers.contains(&ticker) {
-                        let data = AddOrder::read(buffer, &self.context)?;
+                        let data = AddOrder::read(buffer, &self.version, &self.context)?;
                         Some(Message::AddOrder(data))
                     } else {
                         None
                     }
                 }
                 'E' => {
-                    let data = ExecuteOrder::read(buffer, &self.context)?;
+                    let data = ExecuteOrder::read(buffer, &self.version, &self.context)?;
                     Some(Message::ExecuteOrder(data))
                 }
                 'X' => {
-                    let data = CancelOrder::read(buffer, &self.context)?;
+                    let data = CancelOrder::read(buffer, &self.version, &self.context)?;
                     Some(Message::CancelOrder(data))
                 }
                 'D' => {
-                    let data = DeleteOrder::read(buffer, &self.context)?;
+                    let data = DeleteOrder::read(buffer, &self.version, &self.context)?;
                     Some(Message::DeleteOrder(data))
                 }
                 'U' => {
-                    let data = ReplaceOrder::read(buffer, &self.context)?;
+                    let data = ReplaceOrder::read(buffer, &self.version, &self.context)?;
                     Some(Message::ReplaceOrder(data))
                 }
                 _ => None,
