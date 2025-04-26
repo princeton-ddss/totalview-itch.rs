@@ -3,7 +3,7 @@ use std::io::{Result, Seek, SeekFrom};
 use crate::buffer::Buffer;
 
 use super::{read_event_code, read_nanoseconds};
-use super::{EventCode, ReadMessage, Version};
+use super::{Context, EventCode, ReadMessage, Version};
 
 #[derive(Debug)]
 pub struct SystemEvent {
@@ -12,16 +12,12 @@ pub struct SystemEvent {
 }
 
 impl ReadMessage for SystemEvent {
-    fn read<const N: usize>(
-        buffer: &mut Buffer<N>,
-        version: &Version,
-        clock: Option<u32>,
-    ) -> Result<Self> {
-        if version == &Version::V50 {
+    fn read<const N: usize>(buffer: &mut Buffer<N>, context: &Context) -> Result<Self> {
+        if context.version == Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
 
-        let nanoseconds = read_nanoseconds(buffer, version, clock)?;
+        let nanoseconds = read_nanoseconds(buffer, &context.version, context.clock)?;
         let event_code = read_event_code(buffer)?;
 
         Ok(Self {

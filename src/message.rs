@@ -56,12 +56,13 @@ pub enum Side {
     Sell,
 }
 
-pub trait ReadMessage: Sized {
-    fn read<const N: usize>(
-        buffer: &mut Buffer<N>,
-        version: &Version,
-        clock: Option<u32>,
-    ) -> Result<Self>;
+pub(crate) struct Context {
+    pub version: Version,
+    pub clock: Option<u32>, // Tracks number of seconds past midnight (applicable for Version 4.1)
+}
+
+pub(crate) trait ReadMessage: Sized {
+    fn read<const N: usize>(buffer: &mut Buffer<N>, context: &Context) -> Result<Self>;
 }
 
 fn read_nanoseconds<const N: usize>(

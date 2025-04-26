@@ -3,7 +3,7 @@ use std::io::{Result, Seek, SeekFrom};
 use crate::buffer::Buffer;
 
 use super::{read_matchno, read_nanoseconds, read_refno, read_shares};
-use super::{ReadMessage, Version};
+use super::{Context, ReadMessage, Version};
 
 #[derive(Debug)]
 pub struct ExecuteOrder {
@@ -14,16 +14,12 @@ pub struct ExecuteOrder {
 }
 
 impl ReadMessage for ExecuteOrder {
-    fn read<const N: usize>(
-        buffer: &mut Buffer<N>,
-        version: &Version,
-        clock: Option<u32>,
-    ) -> Result<Self> {
-        if version == &Version::V50 {
+    fn read<const N: usize>(buffer: &mut Buffer<N>, context: &Context) -> Result<Self> {
+        if context.version == Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
 
-        let nanoseconds = read_nanoseconds(buffer, version, clock)?;
+        let nanoseconds = read_nanoseconds(buffer, &context.version, context.clock)?;
         let refno = read_refno(buffer)?;
         let shares = read_shares(buffer)?;
         let matchno = read_matchno(buffer)?;
