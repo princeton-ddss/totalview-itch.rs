@@ -11,6 +11,7 @@ pub struct ReplaceOrder {
     refno: u64,
     new_refno: u64,
     shares: u32,
+    ticker: String,
     price: u32,
 }
 
@@ -18,23 +19,36 @@ impl ReadMessage for ReplaceOrder {
     fn read<const N: usize>(
         buffer: &mut Buffer<N>,
         version: &Version,
-        context: &Context,
+        context: &mut Context,
     ) -> Result<Self> {
         if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
 
+        // Read data from buffer
         let nanoseconds = read_nanoseconds(buffer, version, context.clock)?;
         let refno = read_refno(buffer)?;
         let new_refno = read_new_refno(buffer)?;
         let shares = read_shares(buffer)?;
         let price = read_price(buffer)?;
 
+        // Update context
+        let mut order = context
+            .active_orders
+            .remove(&refno)
+            .expect("Order not found");
+        let ticker = order.ticker.clone(); // For use after ownership move
+        order.price = price;
+        order.shares = shares;
+        context.active_orders.insert(new_refno, order);
+
+        // Return message
         Ok(Self {
             nanoseconds,
             refno,
             new_refno,
             shares,
+            ticker,
             price,
         })
     }

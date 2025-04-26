@@ -5,6 +5,7 @@ mod execute_order;
 mod replace_order;
 mod system_event;
 
+use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Read, Result};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
@@ -56,15 +57,39 @@ pub enum Side {
     Sell,
 }
 
+struct OrderState {
+    ticker: String,
+    price: u32,
+    shares: u32,
+}
+
 pub(crate) struct Context {
-    pub clock: Option<u32>, // Tracks number of seconds past midnight (applicable for Version 4.1)
+    clock: Option<u32>, // Tracks number of seconds past midnight (applicable for Version 4.1)
+    active_orders: HashMap<u64, OrderState>,
+}
+
+impl Context {
+    pub fn new() -> Self {
+        Self {
+            clock: None,
+            active_orders: HashMap::new(),
+        }
+    }
+
+    pub fn update_clock(&mut self, seconds: u32) {
+        self.clock = Some(seconds);
+    }
+
+    pub fn has_order(&self, refno: u64) -> bool {
+        self.active_orders.contains_key(&refno)
+    }
 }
 
 pub(crate) trait ReadMessage: Sized {
     fn read<const N: usize>(
         buffer: &mut Buffer<N>,
         version: &Version,
-        context: &Context,
+        context: &mut Context,
     ) -> Result<Self>;
 }
 
@@ -91,7 +116,7 @@ fn read_price<const N: usize>(buffer: &mut Buffer<N>) -> Result<u32> {
     buffer.read_u32::<NetworkEndian>()
 }
 
-fn read_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
+pub(crate) fn read_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
@@ -138,7 +163,7 @@ fn read_event_code<const N: usize>(buffer: &mut Buffer<N>) -> Result<EventCode> 
     Ok(event_code)
 }
 
-pub fn read_ticker<const N: usize>(buffer: &mut Buffer<N>) -> Result<String> {
+pub(crate) fn read_ticker<const N: usize>(buffer: &mut Buffer<N>) -> Result<String> {
     let mut buf = vec![0; 8];
     buffer.read_exact(&mut buf)?;
     match String::from_utf8(buf) {
