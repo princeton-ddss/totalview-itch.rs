@@ -1,6 +1,4 @@
-use std::io::{Result, Seek, SeekFrom};
-
-use crate::buffer::Buffer;
+use std::io::{Read, Result, Seek, SeekFrom};
 
 use super::{read_event_code, read_nanoseconds};
 use super::{Context, EventCode, ReadMessage, Version};
@@ -12,11 +10,10 @@ pub struct SystemEvent {
 }
 
 impl ReadMessage for SystemEvent {
-    fn read<const N: usize>(
-        buffer: &mut Buffer<N>,
-        version: &Version,
-        context: &mut Context,
-    ) -> Result<Self> {
+    fn read<T>(buffer: &mut T, version: &Version, context: &mut Context) -> Result<Self>
+    where
+        T: Read + Seek,
+    {
         if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }

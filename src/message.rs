@@ -6,12 +6,12 @@ mod replace_order;
 mod system_event;
 
 use std::collections::HashMap;
-use std::io::{Error, ErrorKind, Read, Result};
+use std::io::{Error, ErrorKind, Read, Result, Seek};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
 use strum_macros::Display;
 
-use crate::buffer::Buffer;
+use crate::buffer::Glimpse;
 
 pub use add_order::AddOrder;
 pub use cancel_order::CancelOrder;
@@ -86,18 +86,12 @@ impl Context {
 }
 
 pub(crate) trait ReadMessage: Sized {
-    fn read<const N: usize>(
-        buffer: &mut Buffer<N>,
-        version: &Version,
-        context: &mut Context,
-    ) -> Result<Self>;
+    fn read<T>(buffer: &mut T, version: &Version, context: &mut Context) -> Result<Self>
+    where
+        T: Read + Seek;
 }
 
-fn read_nanoseconds<const N: usize>(
-    buffer: &mut Buffer<N>,
-    version: &Version,
-    clock: Option<u32>,
-) -> Result<u64> {
+fn read_nanoseconds<T: Read>(buffer: &mut T, version: &Version, clock: Option<u32>) -> Result<u64> {
     match version {
         Version::V41 => {
             let seconds = clock.expect("Clock info missing");
@@ -108,27 +102,27 @@ fn read_nanoseconds<const N: usize>(
     }
 }
 
-fn read_shares<const N: usize>(buffer: &mut Buffer<N>) -> Result<u32> {
+fn read_shares<T: Read>(buffer: &mut T) -> Result<u32> {
     buffer.read_u32::<NetworkEndian>()
 }
 
-fn read_price<const N: usize>(buffer: &mut Buffer<N>) -> Result<u32> {
+fn read_price<T: Read>(buffer: &mut T) -> Result<u32> {
     buffer.read_u32::<NetworkEndian>()
 }
 
-fn read_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
+fn read_refno<T: Read>(buffer: &mut T) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_new_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
+fn read_new_refno<T: Read>(buffer: &mut T) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_matchno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
+fn read_matchno<T: Read>(buffer: &mut T) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_side<const N: usize>(buffer: &mut Buffer<N>) -> Result<Side> {
+fn read_side<T: Read>(buffer: &mut T) -> Result<Side> {
     let side = match buffer.read_u8().map(char::from)? {
         'B' => Side::Buy,
         'S' => Side::Sell,
@@ -142,7 +136,7 @@ fn read_side<const N: usize>(buffer: &mut Buffer<N>) -> Result<Side> {
     Ok(side)
 }
 
-fn read_event_code<const N: usize>(buffer: &mut Buffer<N>) -> Result<EventCode> {
+fn read_event_code<T: Read>(buffer: &mut T) -> Result<EventCode> {
     let event_code = match buffer.read_u8().map(char::from)? {
         'O' => EventCode::StartMessages,
         'S' => EventCode::StartSystem,
@@ -163,7 +157,7 @@ fn read_event_code<const N: usize>(buffer: &mut Buffer<N>) -> Result<EventCode> 
     Ok(event_code)
 }
 
-fn read_ticker<const N: usize>(buffer: &mut Buffer<N>) -> Result<String> {
+fn read_ticker<T: Read>(buffer: &mut T) -> Result<String> {
     let mut buf = vec![0; 8];
     buffer.read_exact(&mut buf)?;
     match String::from_utf8(buf) {
@@ -172,10 +166,7 @@ fn read_ticker<const N: usize>(buffer: &mut Buffer<N>) -> Result<String> {
     }
 }
 
-pub(crate) fn glimpse_ticker_ahead<const N: usize>(
-    buffer: &mut Buffer<N>,
-    ahead: usize,
-) -> Result<String> {
+pub(crate) fn glimpse_ticker_ahead<T: Glimpse>(buffer: &mut T, ahead: usize) -> Result<String> {
     let buf = buffer.glimpse_ahead(ahead, 8)?;
     match String::from_utf8(buf) {
         Ok(s) => Ok(s.trim().to_string()),
@@ -183,10 +174,7 @@ pub(crate) fn glimpse_ticker_ahead<const N: usize>(
     }
 }
 
-pub(crate) fn glimpse_refno_ahead<const N: usize>(
-    buffer: &mut Buffer<N>,
-    ahead: usize,
-) -> Result<u64> {
+pub(crate) fn glimpse_refno_ahead<T: Glimpse>(buffer: &mut T, ahead: usize) -> Result<u64> {
     let buf = buffer.glimpse_ahead(ahead, 8)?;
     let arr: [u8; 8] = buf.try_into().unwrap();
     Ok(u64::from_be_bytes(arr))

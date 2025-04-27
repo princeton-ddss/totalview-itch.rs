@@ -1,8 +1,8 @@
-use std::io::{Result, Seek, SeekFrom};
+use std::io::{Read, Result, Seek, SeekFrom};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
 
-use super::buffer::Buffer;
+use super::buffer::Glimpse;
 use super::message::{
     glimpse_refno_ahead, glimpse_ticker_ahead, Context, Message, ReadMessage, Version,
 };
@@ -23,7 +23,10 @@ impl Parser {
         }
     }
 
-    pub fn extract_message<const N: usize>(&mut self, buffer: &mut Buffer<N>) -> Result<Message> {
+    pub fn extract_message<T>(&mut self, buffer: &mut T) -> Result<Message>
+    where
+        T: Read + Seek + Glimpse,
+    {
         loop {
             // TODO: Add logic to handle reaching EOF
             let size = buffer.read_u16::<NetworkEndian>()?;
