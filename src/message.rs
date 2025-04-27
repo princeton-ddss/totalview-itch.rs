@@ -116,7 +116,7 @@ fn read_price<const N: usize>(buffer: &mut Buffer<N>) -> Result<u32> {
     buffer.read_u32::<NetworkEndian>()
 }
 
-pub(crate) fn read_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
+fn read_refno<const N: usize>(buffer: &mut Buffer<N>) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
@@ -163,11 +163,31 @@ fn read_event_code<const N: usize>(buffer: &mut Buffer<N>) -> Result<EventCode> 
     Ok(event_code)
 }
 
-pub(crate) fn read_ticker<const N: usize>(buffer: &mut Buffer<N>) -> Result<String> {
+fn read_ticker<const N: usize>(buffer: &mut Buffer<N>) -> Result<String> {
     let mut buf = vec![0; 8];
     buffer.read_exact(&mut buf)?;
     match String::from_utf8(buf) {
         Ok(s) => Ok(s.trim().to_string()),
         Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
     }
+}
+
+pub(crate) fn glimpse_ticker_ahead<const N: usize>(
+    buffer: &mut Buffer<N>,
+    ahead: usize,
+) -> Result<String> {
+    let buf = buffer.glimpse_ahead(ahead, 8)?;
+    match String::from_utf8(buf) {
+        Ok(s) => Ok(s.trim().to_string()),
+        Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
+    }
+}
+
+pub(crate) fn glimpse_refno_ahead<const N: usize>(
+    buffer: &mut Buffer<N>,
+    ahead: usize,
+) -> Result<u64> {
+    let buf = buffer.glimpse_ahead(ahead, 8)?;
+    let arr: [u8; 8] = buf.try_into().unwrap();
+    Ok(u64::from_be_bytes(arr))
 }

@@ -17,6 +17,18 @@ impl<const N: usize> Buffer<N> {
         Ok(Self { file, cursor })
     }
 
+    pub fn glimpse_ahead(&mut self, ahead: usize, size: usize) -> Result<Vec<u8>> {
+        let offset = (ahead + size) as i64;
+        let mut buf = vec![0; size];
+
+        self.seek(SeekFrom::Current(offset))?; // Look ahead enough for rollback to work properly
+        self.seek(SeekFrom::Current(-(size as i64)))?;
+        self.read_exact(&mut buf)?;
+        self.seek(SeekFrom::Current(-offset))?; // Restore position in buffer
+
+        Ok(buf)
+    }
+
     fn refill(&mut self) -> Result<()> {
         let pos = self.cursor.position() as usize;
         let inner = self.cursor.get_mut();

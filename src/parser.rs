@@ -3,7 +3,9 @@ use std::io::{Result, Seek, SeekFrom};
 use byteorder::{NetworkEndian, ReadBytesExt};
 
 use super::buffer::Buffer;
-use super::message::{read_refno, read_ticker, Context, Message, ReadMessage, Version};
+use super::message::{
+    glimpse_refno_ahead, glimpse_ticker_ahead, Context, Message, ReadMessage, Version,
+};
 use super::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent};
 
 pub struct Parser {
@@ -40,8 +42,8 @@ impl Parser {
                 }
                 'A' => {
                     let ticker = match self.version {
-                        Version::V41 => Self::glimpse_ticker_ahead(buffer, 17)?,
-                        Version::V50 => Self::glimpse_ticker_ahead(buffer, 23)?,
+                        Version::V41 => glimpse_ticker_ahead(buffer, 17)?,
+                        Version::V50 => glimpse_ticker_ahead(buffer, 23)?,
                     };
                     if self.tickers.contains(&ticker) {
                         let data = AddOrder::read(buffer, &self.version, &mut self.context)?;
@@ -52,8 +54,8 @@ impl Parser {
                 }
                 'E' => {
                     let refno = match self.version {
-                        Version::V41 => Self::glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => Self::glimpse_refno_ahead(buffer, 10)?,
+                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
                     };
                     if self.context.has_order(refno) {
                         let data = ExecuteOrder::read(buffer, &self.version, &mut self.context)?;
@@ -64,8 +66,8 @@ impl Parser {
                 }
                 'X' => {
                     let refno = match self.version {
-                        Version::V41 => Self::glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => Self::glimpse_refno_ahead(buffer, 10)?,
+                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
                     };
                     if self.context.has_order(refno) {
                         let data = CancelOrder::read(buffer, &self.version, &mut self.context)?;
@@ -76,8 +78,8 @@ impl Parser {
                 }
                 'D' => {
                     let refno = match self.version {
-                        Version::V41 => Self::glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => Self::glimpse_refno_ahead(buffer, 10)?,
+                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
                     };
                     if self.context.has_order(refno) {
                         let data = DeleteOrder::read(buffer, &self.version, &mut self.context)?;
@@ -88,8 +90,8 @@ impl Parser {
                 }
                 'U' => {
                     let refno = match self.version {
-                        Version::V41 => Self::glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => Self::glimpse_refno_ahead(buffer, 10)?,
+                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
                     };
                     if self.context.has_order(refno) {
                         let data = ReplaceOrder::read(buffer, &self.version, &mut self.context)?;
@@ -110,32 +112,5 @@ impl Parser {
                 }
             }
         }
-    }
-
-    fn glimpse_ticker_ahead<const N: usize>(
-        buffer: &mut Buffer<N>,
-        ahead: usize,
-    ) -> Result<String> {
-        let ticker_size = 8;
-        let offset = (ahead + ticker_size) as i64;
-
-        buffer.seek(SeekFrom::Current(offset))?; // Look ahead enough for rollback to work properly
-        buffer.seek(SeekFrom::Current(-(ticker_size as i64)))?;
-        let ticker = read_ticker(buffer)?;
-        buffer.seek(SeekFrom::Current(-offset))?; // Restore position in buffer
-
-        Ok(ticker)
-    }
-
-    fn glimpse_refno_ahead<const N: usize>(buffer: &mut Buffer<N>, ahead: usize) -> Result<u64> {
-        let refno_size = 8;
-        let offset = (ahead + refno_size) as i64;
-
-        buffer.seek(SeekFrom::Current(offset))?; // Look ahead enough for rollback to work properly
-        buffer.seek(SeekFrom::Current(-(refno_size as i64)))?;
-        let refno = read_refno(buffer)?;
-        buffer.seek(SeekFrom::Current(-offset))?; // Restore position in buffer
-
-        Ok(refno)
     }
 }
