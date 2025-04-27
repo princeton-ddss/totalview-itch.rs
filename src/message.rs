@@ -51,16 +51,17 @@ pub enum EventCode {
     EmergencyMarketResumption,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Side {
     Buy,
     Sell,
 }
 
 struct OrderState {
+    side: Side,
+    shares: u32,
     ticker: String,
     price: u32,
-    shares: u32,
 }
 
 pub(crate) struct Context {

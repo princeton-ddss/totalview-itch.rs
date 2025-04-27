@@ -1,12 +1,13 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
 use super::{read_nanoseconds, read_refno};
-use super::{Context, ReadMessage, Version};
+use super::{Context, ReadMessage, Side, Version};
 
 #[derive(Debug)]
 pub struct DeleteOrder {
     nanoseconds: u64,
     refno: u64,
+    side: Side,
     shares: u32,
     ticker: String,
     price: u32,
@@ -35,6 +36,7 @@ impl ReadMessage for DeleteOrder {
         Ok(Self {
             nanoseconds,
             refno,
+            side: order.side,
             shares: order.shares,
             ticker: order.ticker,
             price: order.price,

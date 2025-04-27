@@ -1,12 +1,13 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
 use super::{read_matchno, read_nanoseconds, read_refno, read_shares};
-use super::{Context, ReadMessage, Version};
+use super::{Context, ReadMessage, Side, Version};
 
 #[derive(Debug)]
 pub struct ExecuteOrder {
     nanoseconds: u64,
     refno: u64,
+    side: Side,
     shares: u32,
     ticker: String,
     price: u32,
@@ -39,6 +40,7 @@ impl ReadMessage for ExecuteOrder {
         Ok(Self {
             nanoseconds,
             refno,
+            side: order.side,
             shares,
             ticker: order.ticker.clone(),
             price: order.price,

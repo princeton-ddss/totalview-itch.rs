@@ -1,13 +1,14 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
 use super::{read_nanoseconds, read_new_refno, read_price, read_refno, read_shares};
-use super::{Context, ReadMessage, Version};
+use super::{Context, ReadMessage, Side, Version};
 
 #[derive(Debug)]
 pub struct ReplaceOrder {
     nanoseconds: u64,
     refno: u64,
     new_refno: u64,
+    side: Side,
     shares: u32,
     ticker: String,
     price: u32,
@@ -34,9 +35,10 @@ impl ReadMessage for ReplaceOrder {
             .active_orders
             .remove(&refno)
             .expect("Order not found");
-        let ticker = order.ticker.clone(); // For use after ownership move
-        order.price = price;
+        let side = order.side;
+        let ticker = order.ticker.clone();
         order.shares = shares;
+        order.price = price;
         context.active_orders.insert(new_refno, order);
 
         // Return message
@@ -44,6 +46,7 @@ impl ReadMessage for ReplaceOrder {
             nanoseconds,
             refno,
             new_refno,
+            side,
             shares,
             ticker,
             price,

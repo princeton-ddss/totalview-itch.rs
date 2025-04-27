@@ -32,9 +32,10 @@ impl ReadMessage for AddOrder {
 
         // Update context
         let order = OrderState {
+            side,
+            shares,
             ticker: ticker.clone(),
             price,
-            shares,
         };
         context.active_orders.insert(refno, order);
 
