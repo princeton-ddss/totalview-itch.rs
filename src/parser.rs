@@ -39,70 +39,12 @@ impl Parser {
             }
 
             let msg = match kind {
-                'S' => {
-                    let data = SystemEvent::read(buffer, &self.version, &mut self.context)?;
-                    Some(Message::SystemEvent(data))
-                }
-                'A' => {
-                    let ticker = match self.version {
-                        Version::V41 => glimpse_ticker_ahead(buffer, 17)?,
-                        Version::V50 => glimpse_ticker_ahead(buffer, 23)?,
-                    };
-                    if self.tickers.contains(&ticker) {
-                        let data = AddOrder::read(buffer, &self.version, &mut self.context)?;
-                        Some(Message::AddOrder(data))
-                    } else {
-                        None
-                    }
-                }
-                'E' => {
-                    let refno = match self.version {
-                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
-                    };
-                    if self.context.has_order(refno) {
-                        let data = ExecuteOrder::read(buffer, &self.version, &mut self.context)?;
-                        Some(Message::ExecuteOrder(data))
-                    } else {
-                        None
-                    }
-                }
-                'X' => {
-                    let refno = match self.version {
-                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
-                    };
-                    if self.context.has_order(refno) {
-                        let data = CancelOrder::read(buffer, &self.version, &mut self.context)?;
-                        Some(Message::CancelOrder(data))
-                    } else {
-                        None
-                    }
-                }
-                'D' => {
-                    let refno = match self.version {
-                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
-                    };
-                    if self.context.has_order(refno) {
-                        let data = DeleteOrder::read(buffer, &self.version, &mut self.context)?;
-                        Some(Message::DeleteOrder(data))
-                    } else {
-                        None
-                    }
-                }
-                'U' => {
-                    let refno = match self.version {
-                        Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-                        Version::V50 => glimpse_refno_ahead(buffer, 10)?,
-                    };
-                    if self.context.has_order(refno) {
-                        let data = ReplaceOrder::read(buffer, &self.version, &mut self.context)?;
-                        Some(Message::ReplaceOrder(data))
-                    } else {
-                        None
-                    }
-                }
+                'S' => self.parse_system_event(buffer)?,
+                'A' => self.parse_add_order(buffer)?,
+                'E' => self.parse_execute_order(buffer)?,
+                'X' => self.parse_cancel_order(buffer)?,
+                'D' => self.parse_delete_order(buffer)?,
+                'U' => self.parse_replace_order(buffer)?,
                 _ => None,
             };
 
@@ -114,6 +56,94 @@ impl Parser {
                     continue;
                 }
             }
+        }
+    }
+
+    fn parse_system_event<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek,
+    {
+        let data = SystemEvent::read(buffer, &self.version, &mut self.context)?;
+        Ok(Some(Message::SystemEvent(data)))
+    }
+
+    fn parse_add_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Glimpse,
+    {
+        let ticker = match self.version {
+            Version::V41 => glimpse_ticker_ahead(buffer, 17)?,
+            Version::V50 => glimpse_ticker_ahead(buffer, 23)?,
+        };
+        if self.tickers.contains(&ticker) {
+            let data = AddOrder::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::AddOrder(data)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_execute_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Glimpse,
+    {
+        let refno = match self.version {
+            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+        };
+        if self.context.has_order(refno) {
+            let data = ExecuteOrder::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::ExecuteOrder(data)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_cancel_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Glimpse,
+    {
+        let refno = match self.version {
+            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+        };
+        if self.context.has_order(refno) {
+            let data = CancelOrder::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::CancelOrder(data)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_delete_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Glimpse,
+    {
+        let refno = match self.version {
+            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+        };
+        if self.context.has_order(refno) {
+            let data = DeleteOrder::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::DeleteOrder(data)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_replace_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Glimpse,
+    {
+        let refno = match self.version {
+            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
+            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+        };
+        if self.context.has_order(refno) {
+            let data = ReplaceOrder::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::ReplaceOrder(data)))
+        } else {
+            Ok(None)
         }
     }
 }
