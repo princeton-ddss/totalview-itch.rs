@@ -84,10 +84,10 @@ impl<const N: usize> Seek for Buffer<N> {
     }
 }
 
-impl<const N: usize> Glimpse for Buffer<N> {}
+impl<const N: usize> Peek for Buffer<N> {}
 
-pub trait Glimpse: Read + Seek {
-    fn glimpse_ahead(&mut self, ahead: usize, size: usize) -> Result<Vec<u8>> {
+pub trait Peek: Read + Seek {
+    fn peek_ahead(&mut self, ahead: usize, size: usize) -> Result<Vec<u8>> {
         let offset = (ahead + size) as i64;
         let mut buf = vec![0; size];
 

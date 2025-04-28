@@ -11,7 +11,7 @@ use std::io::{Error, ErrorKind, Read, Result, Seek};
 use byteorder::{NetworkEndian, ReadBytesExt};
 use strum_macros::Display;
 
-use crate::buffer::Glimpse;
+use crate::buffer::Peek;
 
 pub use add_order::AddOrder;
 pub use cancel_order::CancelOrder;
@@ -167,16 +167,16 @@ fn read_ticker<T: Read>(buffer: &mut T) -> Result<String> {
     }
 }
 
-pub(crate) fn glimpse_ticker_ahead<T: Glimpse>(buffer: &mut T, ahead: usize) -> Result<String> {
-    let buf = buffer.glimpse_ahead(ahead, 8)?;
+pub(crate) fn peek_ticker_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<String> {
+    let buf = buffer.peek_ahead(ahead, 8)?;
     match String::from_utf8(buf) {
         Ok(s) => Ok(s.trim().to_string()),
         Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
     }
 }
 
-pub(crate) fn glimpse_refno_ahead<T: Glimpse>(buffer: &mut T, ahead: usize) -> Result<u64> {
-    let buf = buffer.glimpse_ahead(ahead, 8)?;
+pub(crate) fn peek_refno_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<u64> {
+    let buf = buffer.peek_ahead(ahead, 8)?;
     let arr: [u8; 8] = buf.try_into().unwrap();
     Ok(u64::from_be_bytes(arr))
 }

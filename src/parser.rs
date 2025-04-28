@@ -2,10 +2,8 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
 
-use super::buffer::Glimpse;
-use super::message::{
-    glimpse_refno_ahead, glimpse_ticker_ahead, Context, Message, ReadMessage, Version,
-};
+use super::buffer::Peek;
+use super::message::{peek_refno_ahead, peek_ticker_ahead, Context, Message, ReadMessage, Version};
 use super::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent};
 
 pub struct Parser {
@@ -25,7 +23,7 @@ impl Parser {
 
     pub fn extract_message<T>(&mut self, buffer: &mut T) -> Result<Message>
     where
-        T: Read + Seek + Glimpse,
+        T: Read + Seek + Peek,
     {
         loop {
             // TODO: Add logic to handle reaching EOF
@@ -69,11 +67,11 @@ impl Parser {
 
     fn parse_add_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
     where
-        T: Read + Seek + Glimpse,
+        T: Read + Seek + Peek,
     {
         let ticker = match self.version {
-            Version::V41 => glimpse_ticker_ahead(buffer, 17)?,
-            Version::V50 => glimpse_ticker_ahead(buffer, 23)?,
+            Version::V41 => peek_ticker_ahead(buffer, 17)?,
+            Version::V50 => peek_ticker_ahead(buffer, 23)?,
         };
         if self.tickers.contains(&ticker) {
             let data = AddOrder::read(buffer, &self.version, &mut self.context)?;
@@ -85,11 +83,11 @@ impl Parser {
 
     fn parse_execute_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
     where
-        T: Read + Seek + Glimpse,
+        T: Read + Seek + Peek,
     {
         let refno = match self.version {
-            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+            Version::V41 => peek_refno_ahead(buffer, 4)?,
+            Version::V50 => peek_refno_ahead(buffer, 10)?,
         };
         if self.context.has_order(refno) {
             let data = ExecuteOrder::read(buffer, &self.version, &mut self.context)?;
@@ -101,11 +99,11 @@ impl Parser {
 
     fn parse_cancel_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
     where
-        T: Read + Seek + Glimpse,
+        T: Read + Seek + Peek,
     {
         let refno = match self.version {
-            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+            Version::V41 => peek_refno_ahead(buffer, 4)?,
+            Version::V50 => peek_refno_ahead(buffer, 10)?,
         };
         if self.context.has_order(refno) {
             let data = CancelOrder::read(buffer, &self.version, &mut self.context)?;
@@ -117,11 +115,11 @@ impl Parser {
 
     fn parse_delete_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
     where
-        T: Read + Seek + Glimpse,
+        T: Read + Seek + Peek,
     {
         let refno = match self.version {
-            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+            Version::V41 => peek_refno_ahead(buffer, 4)?,
+            Version::V50 => peek_refno_ahead(buffer, 10)?,
         };
         if self.context.has_order(refno) {
             let data = DeleteOrder::read(buffer, &self.version, &mut self.context)?;
@@ -133,11 +131,11 @@ impl Parser {
 
     fn parse_replace_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
     where
-        T: Read + Seek + Glimpse,
+        T: Read + Seek + Peek,
     {
         let refno = match self.version {
-            Version::V41 => glimpse_refno_ahead(buffer, 4)?,
-            Version::V50 => glimpse_refno_ahead(buffer, 10)?,
+            Version::V41 => peek_refno_ahead(buffer, 4)?,
+            Version::V50 => peek_refno_ahead(buffer, 10)?,
         };
         if self.context.has_order(refno) {
             let data = ReplaceOrder::read(buffer, &self.version, &mut self.context)?;
