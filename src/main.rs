@@ -1,7 +1,7 @@
 use lobsters::{Buffer, Parser, Version};
 
 fn main() {
-    let mut buffer = Buffer::<1024>::new("./data/bin/S022717-v50.txt").unwrap();
+    let mut buffer = Buffer::<1024>::new("../data/S022717-v50.txt").unwrap();
 
     let tickers = ["SHV", "TEF", "STM"]
         .iter()
