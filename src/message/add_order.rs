@@ -1,9 +1,12 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
+use getset::Getters;
+
 use super::{read_nanoseconds, read_price, read_refno, read_shares, read_side, read_ticker};
 use super::{Context, OrderState, ReadMessage, Side, Version};
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
+#[getset(get = "pub")]
 pub struct AddOrder {
     nanoseconds: u64,
     refno: u64,

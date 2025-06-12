@@ -1,9 +1,12 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
+use getset::Getters;
+
 use super::{read_event_code, read_nanoseconds};
 use super::{Context, EventCode, ReadMessage, Version};
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
+#[getset(get = "pub")]
 pub struct SystemEvent {
     nanoseconds: u64,
     event_code: EventCode,

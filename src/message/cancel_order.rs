@@ -1,9 +1,12 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
+use getset::Getters;
+
 use super::{read_nanoseconds, read_refno, read_shares};
 use super::{Context, ReadMessage, Side, Version};
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
+#[getset(get = "pub")]
 pub struct CancelOrder {
     nanoseconds: u64,
     refno: u64,
