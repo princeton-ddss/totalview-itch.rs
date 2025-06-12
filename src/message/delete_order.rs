@@ -4,6 +4,7 @@ use getset::Getters;
 
 use super::{read_nanoseconds, read_refno};
 use super::{Context, ReadMessage, Side, Version};
+use super::{IntoOrderMessage, OrderMessage};
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
@@ -44,5 +45,22 @@ impl ReadMessage for DeleteOrder {
             ticker: order.ticker,
             price: order.price,
         })
+    }
+}
+
+impl IntoOrderMessage for DeleteOrder {
+    fn into_order_message(self, date: String) -> OrderMessage {
+        OrderMessage {
+            date,
+            nanoseconds: self.nanoseconds,
+            kind: 'D',
+            ticker: self.ticker,
+            side: self.side,
+            price: self.price,
+            shares: self.shares,
+            refno: self.refno,
+            new_refno: None,
+            mpid: None,
+        }
     }
 }

@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Read, Result, Seek};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
+use serde::Serialize;
 use strum_macros::Display;
 
 use crate::buffer::Peek;
@@ -51,9 +52,11 @@ pub enum EventCode {
     EmergencyMarketResumption,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize)]
 pub enum Side {
+    #[serde(rename = "B")]
     Buy,
+    #[serde(rename = "S")]
     Sell,
 }
 
@@ -175,4 +178,23 @@ pub(crate) fn peek_refno_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<
     let buf = buffer.peek_ahead(ahead, 8)?;
     let arr: [u8; 8] = buf.try_into().unwrap();
     Ok(u64::from_be_bytes(arr))
+}
+
+// Data schema for storing order-related messages
+#[derive(Debug, Serialize)]
+pub struct OrderMessage {
+    date: String,
+    nanoseconds: u64,
+    kind: char,
+    ticker: String,
+    side: Side,
+    price: u32,
+    shares: u32,
+    refno: u64,
+    new_refno: Option<u64>,
+    mpid: Option<String>,
+}
+
+pub trait IntoOrderMessage {
+    fn into_order_message(self, date: String) -> OrderMessage;
 }
