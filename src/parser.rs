@@ -2,9 +2,9 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
 
-use super::buffer::Peek;
-use super::message::{peek_refno_ahead, peek_ticker_ahead, Context, Message, ReadMessage, Version};
-use super::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent};
+use crate::buffer::Peek;
+use crate::message::{peek_refno_ahead, peek_ticker_ahead, Context, Message, ReadMessage, Version};
+use crate::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent};
 
 pub struct Parser {
     version: Version,
