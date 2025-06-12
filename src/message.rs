@@ -119,10 +119,6 @@ fn read_new_refno<T: Read>(buffer: &mut T) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
-fn read_matchno<T: Read>(buffer: &mut T) -> Result<u64> {
-    buffer.read_u64::<NetworkEndian>()
-}
-
 fn read_side<T: Read>(buffer: &mut T) -> Result<Side> {
     let side = match buffer.read_u8().map(char::from)? {
         'B' => Side::Buy,

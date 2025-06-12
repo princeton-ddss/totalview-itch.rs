@@ -1,6 +1,6 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
-use super::{read_matchno, read_nanoseconds, read_refno, read_shares};
+use super::{read_nanoseconds, read_refno, read_shares};
 use super::{Context, ReadMessage, Side, Version};
 
 #[derive(Debug)]
@@ -11,7 +11,6 @@ pub struct ExecuteOrder {
     shares: u32,
     ticker: String,
     price: u32,
-    matchno: u64,
 }
 
 impl ReadMessage for ExecuteOrder {
@@ -27,7 +26,8 @@ impl ReadMessage for ExecuteOrder {
         let nanoseconds = read_nanoseconds(buffer, version, context.clock)?;
         let refno = read_refno(buffer)?;
         let shares = read_shares(buffer)?;
-        let matchno = read_matchno(buffer)?;
+
+        buffer.seek(SeekFrom::Current(8))?; // Discard match number
 
         // Update context
         let order = context
@@ -44,7 +44,6 @@ impl ReadMessage for ExecuteOrder {
             shares,
             ticker: order.ticker.clone(),
             price: order.price,
-            matchno,
         })
     }
 }
