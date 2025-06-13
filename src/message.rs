@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Read, Result, Seek};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
+use getset::Getters;
 use serde::Serialize;
 use strum_macros::Display;
 
@@ -181,8 +182,9 @@ pub(crate) fn peek_refno_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<
 }
 
 // Data schema for storing order-related messages
-#[derive(Debug, Serialize)]
+#[derive(Debug, Getters, Serialize)]
 pub struct OrderMessage {
+    #[getset(get = "pub")]
     date: String,
     nanoseconds: u64,
     kind: char,

@@ -1,6 +1,10 @@
+mod csv;
+
 use std::error::Error;
 
 use crate::message::OrderMessage;
+
+pub use csv::CSV;
 
 pub trait Flush {
     fn flush_order_messages(
