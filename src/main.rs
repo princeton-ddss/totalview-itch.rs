@@ -1,4 +1,4 @@
-use lobsters::{Buffer, Parser, Version};
+use lobsters::{message::IntoOrderMessage, Buffer, Message, Parser, Version, Writer, CSV};
 
 fn main() {
     let mut buffer = Buffer::<1024>::new("../data/S022717-v50.txt").unwrap();
@@ -10,38 +10,38 @@ fn main() {
 
     let mut parser = Parser::new(Version::V50, tickers);
 
+    let backend = CSV::new("../collections").unwrap();
+    let mut writer = Writer::<10, CSV>::new(backend);
+
+    let date = String::from("2017-02-27"); // To be derived from the file name
+
     for _ in 0..100 {
         let msg = parser.extract_message(&mut buffer).unwrap();
+
         println!("\n{:?}", msg);
+
+        match msg {
+            Message::AddOrder(data) => {
+                let order_message = data.into_order_message(date.clone());
+                writer.write_order_message(order_message).unwrap();
+            }
+            Message::CancelOrder(data) => {
+                let order_message = data.into_order_message(date.clone());
+                writer.write_order_message(order_message).unwrap();
+            }
+            Message::DeleteOrder(data) => {
+                let order_message = data.into_order_message(date.clone());
+                writer.write_order_message(order_message).unwrap();
+            }
+            Message::ExecuteOrder(data) => {
+                let order_message = data.into_order_message(date.clone());
+                writer.write_order_message(order_message).unwrap();
+            }
+            Message::ReplaceOrder(data) => {
+                let order_message = data.into_order_message(date.clone());
+                writer.write_order_message(order_message).unwrap();
+            }
+            _ => {}
+        }
     }
-
-    // TODO: implement logic for handling order messages
-
-    // if message type in ['A', 'F']
-    // if message.ticker in tickers
-    // add order to order list
-    // update order book
-
-    // if message type in ['E', 'C', 'X', 'D']
-    // if message.ticker in tickers
-    // complete the message
-    // update the order list
-    // updaet the order book
-
-    // if message.message_type == ['U']
-    // message.complete(&orders);
-    // if message.ticker in tickers
-    // delete_msg, add_msg = message.split();
-    // add_msg.complete(&orders);
-    // delete_msg.complete(&orders);
-    // order_messages_bknd.write(&message);
-    // message_writes += 1;
-    // orders.update(&delete_msg);
-    // books.update(&delete_msg);
-    // orders.add(&add_msg);
-    // books.update(&add_msg);
-    // order_books_bknd.write(books)
-
-    // TODO: implement logic for writing to disk
-    //
 }
