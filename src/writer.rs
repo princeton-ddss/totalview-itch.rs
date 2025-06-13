@@ -7,10 +7,7 @@ use crate::message::OrderMessage;
 pub use csv::CSV;
 
 pub trait Flush {
-    fn flush_order_messages(
-        &self,
-        order_messages: &mut Vec<OrderMessage>,
-    ) -> Result<(), Box<dyn Error>>;
+    fn flush_order_messages(&self, order_messages: &[OrderMessage]) -> Result<(), Box<dyn Error>>;
 }
 
 pub struct Writer<const N: usize, T: Flush> {
@@ -33,9 +30,10 @@ impl<const N: usize, T: Flush> Writer<N, T> {
         self.order_messages.push(order_message);
 
         if self.order_messages.len() >= N {
-            self.backend.flush_order_messages(&mut self.order_messages)
-        } else {
-            Ok(())
+            self.backend.flush_order_messages(&self.order_messages)?;
+            self.order_messages.clear();
         }
+
+        Ok(())
     }
 }

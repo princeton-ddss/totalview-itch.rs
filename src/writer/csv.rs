@@ -24,10 +24,7 @@ impl CSV {
 }
 
 impl Flush for CSV {
-    fn flush_order_messages(
-        &self,
-        order_messages: &mut Vec<OrderMessage>,
-    ) -> Result<(), Box<dyn Error>> {
+    fn flush_order_messages(&self, order_messages: &[OrderMessage]) -> Result<(), Box<dyn Error>> {
         let dirpath = self.output_dir.join("order_messages");
         if !dirpath.exists() {
             create_dir(&dirpath)?;
