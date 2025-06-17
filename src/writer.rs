@@ -37,3 +37,14 @@ impl<const N: usize, T: Flush> Writer<N, T> {
         Ok(())
     }
 }
+
+impl<const N: usize, T: Flush> Drop for Writer<N, T> {
+    fn drop(&mut self) {
+        if !self.order_messages.is_empty() {
+            match self.backend.flush_order_messages(&self.order_messages) {
+                Err(e) => eprintln!("Failed to flush residual order messages: {}", e),
+                Ok(_) => self.order_messages.clear(),
+            };
+        }
+    }
+}
