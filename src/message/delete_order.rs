@@ -15,6 +15,7 @@ pub struct DeleteOrder {
     shares: u32,
     ticker: String,
     price: u32,
+    from_replace: bool,
 }
 
 impl DeleteOrder {
@@ -25,6 +26,7 @@ impl DeleteOrder {
         side: Side,
         price: u32,
         shares: u32,
+        from_replace: bool,
     ) -> Self {
         Self {
             nanoseconds,
@@ -33,6 +35,7 @@ impl DeleteOrder {
             side,
             price,
             shares,
+            from_replace,
         }
     }
 }
@@ -64,6 +67,7 @@ impl ReadMessage for DeleteOrder {
             shares: order.shares,
             ticker: order.ticker,
             price: order.price,
+            from_replace: false,
         })
     }
 }
@@ -79,6 +83,7 @@ impl IntoOrderMessage for DeleteOrder {
             price: self.price,
             shares: self.shares,
             refno: self.refno,
+            from_replace: self.from_replace,
             mpid: None,
         }
     }

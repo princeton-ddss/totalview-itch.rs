@@ -189,6 +189,7 @@ pub struct OrderMessage {
     price: u32,
     shares: u32,
     refno: u64,
+    from_replace: bool,
     mpid: Option<String>,
 }
 

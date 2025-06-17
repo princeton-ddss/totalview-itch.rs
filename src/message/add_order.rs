@@ -15,6 +15,7 @@ pub struct AddOrder {
     shares: u32,
     ticker: String,
     price: u32,
+    from_replace: bool,
 }
 
 impl AddOrder {
@@ -25,6 +26,7 @@ impl AddOrder {
         side: Side,
         price: u32,
         shares: u32,
+        from_replace: bool,
     ) -> Self {
         Self {
             nanoseconds,
@@ -33,6 +35,7 @@ impl AddOrder {
             side,
             price,
             shares,
+            from_replace,
         }
     }
 }
@@ -71,6 +74,7 @@ impl ReadMessage for AddOrder {
             shares,
             ticker,
             price,
+            from_replace: false,
         })
     }
 }
@@ -86,6 +90,7 @@ impl IntoOrderMessage for AddOrder {
             price: self.price,
             shares: self.shares,
             refno: self.refno,
+            from_replace: self.from_replace,
             mpid: None,
         }
     }
