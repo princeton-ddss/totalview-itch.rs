@@ -17,6 +17,26 @@ pub struct DeleteOrder {
     price: u32,
 }
 
+impl DeleteOrder {
+    pub(crate) fn new(
+        nanoseconds: u64,
+        refno: u64,
+        ticker: String,
+        side: Side,
+        price: u32,
+        shares: u32,
+    ) -> Self {
+        Self {
+            nanoseconds,
+            refno,
+            ticker,
+            side,
+            price,
+            shares,
+        }
+    }
+}
+
 impl ReadMessage for DeleteOrder {
     fn read<T>(buffer: &mut T, version: &Version, context: &mut Context) -> Result<Self>
     where

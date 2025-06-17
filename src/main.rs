@@ -37,10 +37,6 @@ fn main() {
                 let order_message = data.into_order_message(date.clone());
                 writer.write_order_message(order_message).unwrap();
             }
-            Message::ReplaceOrder(data) => {
-                let order_message = data.into_order_message(date.clone());
-                writer.write_order_message(order_message).unwrap();
-            }
             _ => {}
         }
     }

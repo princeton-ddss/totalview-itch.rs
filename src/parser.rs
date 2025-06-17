@@ -1,15 +1,18 @@
+use std::collections::VecDeque;
 use std::io::{Read, Result, Seek, SeekFrom};
 
 use byteorder::{NetworkEndian, ReadBytesExt};
 
 use crate::buffer::Peek;
-use crate::message::{peek_refno_ahead, peek_ticker_ahead, Context, Message, ReadMessage, Version};
-use crate::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, ReplaceOrder, SystemEvent};
+use crate::message::{peek_refno_ahead, peek_ticker_ahead, read_replace_order};
+use crate::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, SystemEvent};
+use crate::message::{Context, Message, ReadMessage, Version};
 
 pub struct Parser {
     version: Version,
     tickers: Vec<String>,
     context: Context,
+    buf: VecDeque<Message>, // To handle the case where multiple messages are parsed at once
 }
 
 impl Parser {
@@ -18,6 +21,7 @@ impl Parser {
             version,
             tickers,
             context: Context::new(),
+            buf: VecDeque::new(),
         }
     }
 
@@ -25,6 +29,10 @@ impl Parser {
     where
         T: Read + Seek + Peek,
     {
+        if !self.buf.is_empty() {
+            return Ok(self.buf.pop_front().unwrap());
+        }
+
         loop {
             // TODO: Add logic to handle reaching EOF
             let size = buffer.read_u16::<NetworkEndian>()?;
@@ -138,8 +146,10 @@ impl Parser {
             Version::V50 => peek_refno_ahead(buffer, 10)?,
         };
         if self.context.has_order(refno) {
-            let data = ReplaceOrder::read(buffer, &self.version, &mut self.context)?;
-            Ok(Some(Message::ReplaceOrder(data)))
+            let (delete_order, add_order) =
+                read_replace_order(buffer, &self.version, &mut self.context)?;
+            self.buf.push_back(Message::AddOrder(add_order)); // Return in next call
+            Ok(Some(Message::DeleteOrder(delete_order)))
         } else {
             Ok(None)
         }

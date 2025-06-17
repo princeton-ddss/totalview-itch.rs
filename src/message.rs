@@ -19,8 +19,9 @@ pub use add_order::AddOrder;
 pub use cancel_order::CancelOrder;
 pub use delete_order::DeleteOrder;
 pub use execute_order::ExecuteOrder;
-pub use replace_order::ReplaceOrder;
 pub use system_event::SystemEvent;
+
+pub(crate) use replace_order::read_replace_order;
 
 #[derive(Debug)]
 pub enum Message {
@@ -29,7 +30,6 @@ pub enum Message {
     ExecuteOrder(ExecuteOrder),
     CancelOrder(CancelOrder),
     DeleteOrder(DeleteOrder),
-    ReplaceOrder(ReplaceOrder),
 }
 
 #[derive(Debug, PartialEq, Display)]
@@ -116,10 +116,6 @@ fn read_price<T: Read>(buffer: &mut T) -> Result<u32> {
 }
 
 fn read_refno<T: Read>(buffer: &mut T) -> Result<u64> {
-    buffer.read_u64::<NetworkEndian>()
-}
-
-fn read_new_refno<T: Read>(buffer: &mut T) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 

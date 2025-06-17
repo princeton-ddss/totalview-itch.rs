@@ -17,6 +17,26 @@ pub struct AddOrder {
     price: u32,
 }
 
+impl AddOrder {
+    pub(crate) fn new(
+        nanoseconds: u64,
+        refno: u64,
+        ticker: String,
+        side: Side,
+        price: u32,
+        shares: u32,
+    ) -> Self {
+        Self {
+            nanoseconds,
+            refno,
+            ticker,
+            side,
+            price,
+            shares,
+        }
+    }
+}
+
 impl ReadMessage for AddOrder {
     fn read<T>(buffer: &mut T, version: &Version, context: &mut Context) -> Result<Self>
     where
