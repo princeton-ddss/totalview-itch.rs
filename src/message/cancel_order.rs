@@ -10,11 +10,11 @@ use super::{IntoOrderMessage, OrderMessage};
 #[getset(get = "pub")]
 pub struct CancelOrder {
     nanoseconds: u64,
-    refno: u64,
-    side: Side,
-    shares: u32,
     ticker: String,
+    side: Side,
     price: u32,
+    shares: u32,
+    refno: u64,
 }
 
 impl ReadMessage for CancelOrder {
@@ -41,11 +41,11 @@ impl ReadMessage for CancelOrder {
         // Return message
         Ok(Self {
             nanoseconds,
-            refno,
-            side: order.side,
-            shares,
             ticker: order.ticker.clone(),
+            side: order.side,
             price: order.price,
+            shares,
+            refno,
         })
     }
 }

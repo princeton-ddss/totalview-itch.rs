@@ -27,32 +27,32 @@ where
         .active_orders
         .remove(&old_refno)
         .expect("Order not found");
-    let side = order.side;
     let ticker = order.ticker.clone();
-    let old_shares = order.shares;
+    let side = order.side;
     let old_price = order.price;
-    order.shares = new_shares;
+    let old_shares = order.shares;
     order.price = new_price;
+    order.shares = new_shares;
     context.active_orders.insert(new_refno, order);
 
     // Split the replacement order into delete and add parts
     let from_replace = true;
     let delete_order = DeleteOrder::new(
         nanoseconds,
-        old_refno,
         ticker.clone(),
         side,
         old_price,
         old_shares,
+        old_refno,
         from_replace,
     );
     let add_order = AddOrder::new(
         nanoseconds,
-        new_refno,
         ticker.clone(),
         side,
         new_price,
         new_shares,
+        new_refno,
         from_replace,
     );
 

@@ -10,31 +10,31 @@ use super::{IntoOrderMessage, OrderMessage};
 #[getset(get = "pub")]
 pub struct AddOrder {
     nanoseconds: u64,
-    refno: u64,
-    side: Side,
-    shares: u32,
     ticker: String,
+    side: Side,
     price: u32,
+    shares: u32,
+    refno: u64,
     from_replace: bool,
 }
 
 impl AddOrder {
     pub(crate) fn new(
         nanoseconds: u64,
-        refno: u64,
         ticker: String,
         side: Side,
         price: u32,
         shares: u32,
+        refno: u64,
         from_replace: bool,
     ) -> Self {
         Self {
             nanoseconds,
-            refno,
             ticker,
             side,
             price,
             shares,
+            refno,
             from_replace,
         }
     }
@@ -59,21 +59,21 @@ impl ReadMessage for AddOrder {
 
         // Update context
         let order = OrderState {
-            side,
-            shares,
             ticker: ticker.clone(),
+            side,
             price,
+            shares,
         };
         context.active_orders.insert(refno, order);
 
         // Return message
         Ok(Self {
             nanoseconds,
-            refno,
-            side,
-            shares,
             ticker,
+            side,
             price,
+            shares,
+            refno,
             from_replace: false,
         })
     }

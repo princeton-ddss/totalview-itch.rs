@@ -62,10 +62,10 @@ pub enum Side {
 }
 
 struct OrderState {
-    side: Side,
-    shares: u32,
     ticker: String,
+    side: Side,
     price: u32,
+    shares: u32,
 }
 
 pub(crate) struct Context {
