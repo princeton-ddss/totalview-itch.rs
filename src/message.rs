@@ -163,6 +163,16 @@ fn read_ticker<T: Read>(buffer: &mut T) -> Result<String> {
     }
 }
 
+pub(crate) fn read_kind<T: Read>(buffer: &mut T) -> Result<char> {
+    buffer.read_u8().map(char::from)
+}
+
+pub(crate) fn peek_kind_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<char> {
+    let buf = buffer.peek_ahead(ahead, 1)?;
+    let kind = char::from(buf[0]);
+    Ok(kind)
+}
+
 pub(crate) fn peek_ticker_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<String> {
     let buf = buffer.peek_ahead(ahead, 8)?;
     match String::from_utf8(buf) {

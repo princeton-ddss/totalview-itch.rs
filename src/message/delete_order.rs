@@ -2,7 +2,7 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use getset::Getters;
 
-use super::{read_nanoseconds, read_refno};
+use super::{read_kind, read_nanoseconds, read_refno};
 use super::{Context, ReadMessage, Side, Version};
 use super::{IntoOrderMessage, OrderMessage};
 
@@ -10,6 +10,7 @@ use super::{IntoOrderMessage, OrderMessage};
 #[getset(get = "pub")]
 pub struct DeleteOrder {
     nanoseconds: u64,
+    kind: char,
     ticker: String,
     side: Side,
     price: u32,
@@ -21,6 +22,7 @@ pub struct DeleteOrder {
 impl DeleteOrder {
     pub(crate) fn new(
         nanoseconds: u64,
+        kind: char,
         ticker: String,
         side: Side,
         price: u32,
@@ -30,6 +32,7 @@ impl DeleteOrder {
     ) -> Self {
         Self {
             nanoseconds,
+            kind,
             ticker,
             side,
             price,
@@ -45,11 +48,11 @@ impl ReadMessage for DeleteOrder {
     where
         T: Read + Seek,
     {
+        // Read data from buffer
+        let kind = read_kind(buffer)?;
         if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
-
-        // Read data from buffer
         let nanoseconds = read_nanoseconds(buffer, version, context.clock)?;
         let refno = read_refno(buffer)?;
 
@@ -62,6 +65,7 @@ impl ReadMessage for DeleteOrder {
         // Return message
         Ok(Self {
             nanoseconds,
+            kind,
             ticker: order.ticker,
             side: order.side,
             price: order.price,
@@ -77,7 +81,7 @@ impl IntoOrderMessage for DeleteOrder {
         OrderMessage {
             date,
             nanoseconds: self.nanoseconds,
-            kind: 'D',
+            kind: self.kind,
             ticker: self.ticker,
             side: self.side,
             price: self.price,

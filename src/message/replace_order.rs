@@ -1,6 +1,6 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
-use super::{read_nanoseconds, read_price, read_refno, read_shares};
+use super::{read_kind, read_nanoseconds, read_price, read_refno, read_shares};
 use super::{AddOrder, Context, DeleteOrder, Version};
 
 pub(crate) fn read_replace_order<T>(
@@ -11,11 +11,11 @@ pub(crate) fn read_replace_order<T>(
 where
     T: Read + Seek,
 {
+    // Read data from buffer
+    let _kind = read_kind(buffer)?;
     if version == &Version::V50 {
         buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
     }
-
-    // Read data from buffer
     let nanoseconds = read_nanoseconds(buffer, version, context.clock)?;
     let old_refno = read_refno(buffer)?;
     let new_refno = read_refno(buffer)?;
@@ -39,6 +39,7 @@ where
     let from_replace = true;
     let delete_order = DeleteOrder::new(
         nanoseconds,
+        'D',
         ticker.clone(),
         side,
         old_price,
@@ -48,6 +49,7 @@ where
     );
     let add_order = AddOrder::new(
         nanoseconds,
+        'A',
         ticker.clone(),
         side,
         new_price,

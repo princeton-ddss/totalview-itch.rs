@@ -2,7 +2,9 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use getset::Getters;
 
-use super::{read_nanoseconds, read_price, read_refno, read_shares, read_side, read_ticker};
+use super::{
+    read_kind, read_nanoseconds, read_price, read_refno, read_shares, read_side, read_ticker,
+};
 use super::{Context, OrderState, ReadMessage, Side, Version};
 use super::{IntoOrderMessage, OrderMessage};
 
@@ -10,6 +12,7 @@ use super::{IntoOrderMessage, OrderMessage};
 #[getset(get = "pub")]
 pub struct AddOrder {
     nanoseconds: u64,
+    kind: char,
     ticker: String,
     side: Side,
     price: u32,
@@ -21,6 +24,7 @@ pub struct AddOrder {
 impl AddOrder {
     pub(crate) fn new(
         nanoseconds: u64,
+        kind: char,
         ticker: String,
         side: Side,
         price: u32,
@@ -30,6 +34,7 @@ impl AddOrder {
     ) -> Self {
         Self {
             nanoseconds,
+            kind,
             ticker,
             side,
             price,
@@ -45,11 +50,11 @@ impl ReadMessage for AddOrder {
     where
         T: Read + Seek,
     {
+        // Read data from buffer
+        let kind = read_kind(buffer)?;
         if version == &Version::V50 {
             buffer.seek(SeekFrom::Current(4))?; // Discard stock locate and tracking number
         }
-
-        // Read data from buffer
         let nanoseconds = read_nanoseconds(buffer, version, context.clock)?;
         let refno = read_refno(buffer)?;
         let side = read_side(buffer)?;
@@ -69,6 +74,7 @@ impl ReadMessage for AddOrder {
         // Return message
         Ok(Self {
             nanoseconds,
+            kind,
             ticker,
             side,
             price,
@@ -84,7 +90,7 @@ impl IntoOrderMessage for AddOrder {
         OrderMessage {
             date,
             nanoseconds: self.nanoseconds,
-            kind: 'A',
+            kind: self.kind,
             ticker: self.ticker,
             side: self.side,
             price: self.price,
