@@ -3,7 +3,8 @@ use std::io::{Read, Result, Seek, SeekFrom};
 use getset::Getters;
 
 use super::{
-    read_kind, read_nanoseconds, read_price, read_refno, read_shares, read_side, read_ticker,
+    read_kind, read_mpid, read_nanoseconds, read_price, read_refno, read_shares, read_side,
+    read_ticker,
 };
 use super::{Context, OrderState, ReadMessage, Side, Version};
 use super::{IntoOrderMessage, OrderMessage};
@@ -19,6 +20,7 @@ pub struct AddOrder {
     shares: u32,
     refno: u64,
     from_replace: Option<bool>,
+    mpid: Option<String>,
 }
 
 impl AddOrder {
@@ -31,6 +33,7 @@ impl AddOrder {
         shares: u32,
         refno: u64,
         from_replace: Option<bool>,
+        mpid: Option<String>,
     ) -> Self {
         Self {
             nanoseconds,
@@ -41,6 +44,7 @@ impl AddOrder {
             shares,
             refno,
             from_replace,
+            mpid,
         }
     }
 }
@@ -61,6 +65,11 @@ impl ReadMessage for AddOrder {
         let shares = read_shares(buffer)?;
         let ticker = read_ticker(buffer)?;
         let price = read_price(buffer)?;
+        let mpid = if kind == 'F' {
+            Some(read_mpid(buffer)?)
+        } else {
+            None
+        };
 
         // Update context
         let order = OrderState {
@@ -81,6 +90,7 @@ impl ReadMessage for AddOrder {
             shares,
             refno,
             from_replace: Some(false),
+            mpid,
         })
     }
 }
@@ -97,7 +107,7 @@ impl IntoOrderMessage for AddOrder {
             shares: self.shares,
             refno: self.refno,
             from_replace: self.from_replace,
-            mpid: None,
+            mpid: self.mpid,
         }
     }
 }

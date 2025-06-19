@@ -38,23 +38,24 @@ where
     // Split the replacement order into delete and add parts
     let delete_order = DeleteOrder::new(
         nanoseconds,
-        'D',
+        'D', // `kind`
         ticker.clone(),
         side,
         old_price,
         old_shares,
         old_refno,
-        Some(true),
+        Some(true), // `from_replace`
     );
     let add_order = AddOrder::new(
         nanoseconds,
-        'A',
+        'A', // `kind`
         ticker.clone(),
         side,
         new_price,
         new_shares,
         new_refno,
-        Some(true),
+        Some(true), // `from_replace`
+        None,       // `mpid`
     );
 
     // Return messages

@@ -163,6 +163,15 @@ fn read_ticker<T: Read>(buffer: &mut T) -> Result<String> {
     }
 }
 
+fn read_mpid<T: Read>(buffer: &mut T) -> Result<String> {
+    let mut buf = vec![0; 4];
+    buffer.read_exact(&mut buf)?;
+    match String::from_utf8(buf) {
+        Ok(s) => Ok(s.trim().to_string()),
+        Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
+    }
+}
+
 pub(crate) fn read_size<T: Read>(buffer: &mut T) -> Result<u16> {
     buffer.read_u16::<NetworkEndian>()
 }
