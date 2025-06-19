@@ -51,7 +51,7 @@ impl Parser {
             let msg = match kind {
                 'S' => self.parse_system_event(buffer)?,
                 'A' | 'F' => self.parse_add_order(buffer)?,
-                'E' => self.parse_execute_order(buffer)?,
+                'E' | 'C' => self.parse_execute_order(buffer)?,
                 'X' => self.parse_cancel_order(buffer)?,
                 'D' => self.parse_delete_order(buffer)?,
                 'U' => self.parse_replace_order(buffer)?,
