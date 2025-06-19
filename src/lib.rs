@@ -1,4 +1,5 @@
 pub mod buffer;
+pub mod constants;
 pub mod message;
 pub mod parser;
 pub mod writer;

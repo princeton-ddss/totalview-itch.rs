@@ -1,7 +1,8 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::io::{Read, Result, Seek, SeekFrom};
 
 use crate::buffer::Peek;
+use crate::constants::EVERY_TICKER;
 use crate::message::{
     peek_kind, peek_refno_ahead, peek_ticker_ahead, read_kind, read_seconds, read_size,
 };
@@ -12,13 +13,13 @@ use crate::message::{Context, Message, ReadMessage, Version};
 
 pub struct Parser {
     version: Version,
-    tickers: Vec<String>,
+    tickers: HashSet<String>,
     context: Context,
     buf: VecDeque<Message>, // To handle the case where multiple messages are parsed at once
 }
 
 impl Parser {
-    pub fn new(version: Version, tickers: Vec<String>) -> Self {
+    pub fn new(version: Version, tickers: HashSet<String>) -> Self {
         Self {
             version,
             tickers,
@@ -80,11 +81,17 @@ impl Parser {
     where
         T: Read + Seek + Peek,
     {
-        let ticker = match self.version {
-            Version::V41 => peek_ticker_ahead(buffer, 18)?,
-            Version::V50 => peek_ticker_ahead(buffer, 24)?,
+        let should_parse = if self.tickers.contains(EVERY_TICKER) {
+            true
+        } else {
+            let ticker = match self.version {
+                Version::V41 => peek_ticker_ahead(buffer, 18)?,
+                Version::V50 => peek_ticker_ahead(buffer, 24)?,
+            };
+            self.tickers.contains(&ticker)
         };
-        if self.tickers.contains(&ticker) {
+
+        if should_parse {
             let data = AddOrder::read(buffer, &self.version, &mut self.context)?;
             Ok(Some(Message::AddOrder(data)))
         } else {
