@@ -1,13 +1,13 @@
 use std::collections::VecDeque;
 use std::io::{Read, Result, Seek, SeekFrom};
 
-use byteorder::{NetworkEndian, ReadBytesExt};
-
 use crate::buffer::Peek;
 use crate::message::{
-    peek_kind_ahead, peek_refno_ahead, peek_ticker_ahead, read_kind, read_replace_order,
+    peek_kind, peek_refno_ahead, peek_ticker_ahead, read_kind, read_seconds, read_size,
 };
-use crate::message::{AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, SystemEvent};
+use crate::message::{
+    read_replace_order, AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, SystemEvent,
+};
 use crate::message::{Context, Message, ReadMessage, Version};
 
 pub struct Parser {
@@ -37,12 +37,12 @@ impl Parser {
 
         loop {
             // TODO: Add logic to handle reaching EOF
-            let size = buffer.read_u16::<NetworkEndian>()?;
-            let kind = peek_kind_ahead(buffer, 0)?;
+            let size = read_size(buffer)?;
+            let kind = peek_kind(buffer)?;
 
             if kind == 'T' {
                 let _kind = read_kind(buffer)?;
-                let seconds = buffer.read_u32::<NetworkEndian>()?;
+                let seconds = read_seconds(buffer)?;
                 self.context.update_clock(seconds);
                 continue;
             }

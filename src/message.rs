@@ -163,12 +163,20 @@ fn read_ticker<T: Read>(buffer: &mut T) -> Result<String> {
     }
 }
 
+pub(crate) fn read_size<T: Read>(buffer: &mut T) -> Result<u16> {
+    buffer.read_u16::<NetworkEndian>()
+}
+
 pub(crate) fn read_kind<T: Read>(buffer: &mut T) -> Result<char> {
     buffer.read_u8().map(char::from)
 }
 
-pub(crate) fn peek_kind_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<char> {
-    let buf = buffer.peek_ahead(ahead, 1)?;
+pub(crate) fn read_seconds<T: Read>(buffer: &mut T) -> Result<u32> {
+    buffer.read_u32::<NetworkEndian>()
+}
+
+pub(crate) fn peek_kind<T: Peek>(buffer: &mut T) -> Result<char> {
+    let buf = buffer.peek_ahead(0, 1)?;
     let kind = char::from(buf[0]);
     Ok(kind)
 }
