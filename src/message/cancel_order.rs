@@ -65,6 +65,8 @@ impl IntoOrderMessage for CancelOrder {
             refno: self.refno,
             from_replace: None,
             mpid: None,
+            printable: None,
+            execution_price: None,
         }
     }
 }

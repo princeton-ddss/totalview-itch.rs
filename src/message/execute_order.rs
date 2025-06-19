@@ -2,7 +2,7 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use getset::Getters;
 
-use super::{read_kind, read_nanoseconds, read_refno, read_shares};
+use super::{read_kind, read_nanoseconds, read_price, read_printable, read_refno, read_shares};
 use super::{Context, ReadMessage, Side, Version};
 use super::{IntoOrderMessage, OrderMessage};
 
@@ -16,6 +16,8 @@ pub struct ExecuteOrder {
     price: u32,
     shares: u32,
     refno: u64,
+    printable: Option<bool>,
+    execution_price: Option<u32>,
 }
 
 impl ReadMessage for ExecuteOrder {
@@ -32,6 +34,13 @@ impl ReadMessage for ExecuteOrder {
         let refno = read_refno(buffer)?;
         let shares = read_shares(buffer)?;
         buffer.seek(SeekFrom::Current(8))?; // Discard match number
+        let (printable, execution_price) = if kind == 'C' {
+            let printable = Some(read_printable(buffer)?);
+            let execution_price = Some(read_price(buffer)?);
+            (printable, execution_price)
+        } else {
+            (None, None)
+        };
 
         // Update context
         let order = context
@@ -49,6 +58,8 @@ impl ReadMessage for ExecuteOrder {
             price: order.price,
             shares,
             refno,
+            printable,
+            execution_price,
         })
     }
 }
@@ -66,6 +77,8 @@ impl IntoOrderMessage for ExecuteOrder {
             refno: self.refno,
             from_replace: None,
             mpid: None,
+            printable: self.printable,
+            execution_price: self.execution_price,
         }
     }
 }

@@ -108,6 +108,8 @@ impl IntoOrderMessage for AddOrder {
             refno: self.refno,
             from_replace: self.from_replace,
             mpid: self.mpid,
+            printable: None,
+            execution_price: None,
         }
     }
 }

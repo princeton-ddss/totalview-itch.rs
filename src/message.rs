@@ -119,6 +119,11 @@ fn read_refno<T: Read>(buffer: &mut T) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
+fn read_printable<T: Read>(buffer: &mut T) -> Result<bool> {
+    let printable = buffer.read_u8().map(char::from)?;
+    Ok(printable == 'Y')
+}
+
 fn read_side<T: Read>(buffer: &mut T) -> Result<Side> {
     let side = match buffer.read_u8().map(char::from)? {
         'B' => Side::Buy,
@@ -218,6 +223,8 @@ pub struct OrderMessage {
     refno: u64,
     from_replace: Option<bool>,
     mpid: Option<String>,
+    printable: Option<bool>,
+    execution_price: Option<u32>,
 }
 
 pub trait IntoOrderMessage {

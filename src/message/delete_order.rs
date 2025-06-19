@@ -89,6 +89,8 @@ impl IntoOrderMessage for DeleteOrder {
             refno: self.refno,
             from_replace: self.from_replace,
             mpid: None,
+            printable: None,
+            execution_price: None,
         }
     }
 }
