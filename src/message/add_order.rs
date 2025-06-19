@@ -18,7 +18,7 @@ pub struct AddOrder {
     price: u32,
     shares: u32,
     refno: u64,
-    from_replace: bool,
+    from_replace: Option<bool>,
 }
 
 impl AddOrder {
@@ -30,7 +30,7 @@ impl AddOrder {
         price: u32,
         shares: u32,
         refno: u64,
-        from_replace: bool,
+        from_replace: Option<bool>,
     ) -> Self {
         Self {
             nanoseconds,
@@ -80,7 +80,7 @@ impl ReadMessage for AddOrder {
             price,
             shares,
             refno,
-            from_replace: false,
+            from_replace: Some(false),
         })
     }
 }

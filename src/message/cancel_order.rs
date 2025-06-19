@@ -63,7 +63,7 @@ impl IntoOrderMessage for CancelOrder {
             price: self.price,
             shares: self.shares,
             refno: self.refno,
-            from_replace: false,
+            from_replace: None,
             mpid: None,
         }
     }

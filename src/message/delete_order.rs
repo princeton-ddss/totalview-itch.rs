@@ -16,7 +16,7 @@ pub struct DeleteOrder {
     price: u32,
     shares: u32,
     refno: u64,
-    from_replace: bool,
+    from_replace: Option<bool>,
 }
 
 impl DeleteOrder {
@@ -28,7 +28,7 @@ impl DeleteOrder {
         price: u32,
         shares: u32,
         refno: u64,
-        from_replace: bool,
+        from_replace: Option<bool>,
     ) -> Self {
         Self {
             nanoseconds,
@@ -71,7 +71,7 @@ impl ReadMessage for DeleteOrder {
             price: order.price,
             shares: order.shares,
             refno,
-            from_replace: false,
+            from_replace: Some(false),
         })
     }
 }

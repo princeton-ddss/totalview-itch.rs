@@ -36,7 +36,6 @@ where
     context.active_orders.insert(new_refno, order);
 
     // Split the replacement order into delete and add parts
-    let from_replace = true;
     let delete_order = DeleteOrder::new(
         nanoseconds,
         'D',
@@ -45,7 +44,7 @@ where
         old_price,
         old_shares,
         old_refno,
-        from_replace,
+        Some(true),
     );
     let add_order = AddOrder::new(
         nanoseconds,
@@ -55,7 +54,7 @@ where
         new_price,
         new_shares,
         new_refno,
-        from_replace,
+        Some(true),
     );
 
     // Return messages

@@ -64,7 +64,7 @@ impl IntoOrderMessage for ExecuteOrder {
             price: self.price,
             shares: self.shares,
             refno: self.refno,
-            from_replace: false,
+            from_replace: None,
             mpid: None,
         }
     }
