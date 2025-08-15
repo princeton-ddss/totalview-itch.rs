@@ -72,35 +72,79 @@ impl IntoOrderMessage for CancelOrder {
 }
 
 #[cfg(test)]
-mod helpers {
+mod tests {
+    use crate::message::OrderState;
+
     use super::*;
     use byteorder::{NetworkEndian, WriteBytesExt};
+    use std::io::Cursor;
 
-    fn add_order_v41() {
+    pub fn cancel_order_v41(nanoseconds: u32, refno: u64, shares: u32) -> Cursor<Vec<u8>> {
         let mut data = Vec::<u8>::new();
-        data.push(b'A');
-        data.write_u16();
-        data.data
-    }
-    fn add_order_v50() {}
-    fn append_kind(data: &mut Vec<u8>, kind: char) {
-        data.push(kind as u8);
-    }
-    fn append_size(data: &mut Vec<u8>, size: u16) {
-        data.write_u16::<NetworkEndian>(size).unwrap();
-    }
-    fn append_nanoseconds(data: &mut Vec<u8>, nano: u48) {}
-    fn append_refno() {}
-    fn append_side() {}
-    fn append_shares() {}
-    fn append_ticker() {}
-    fn append_price() {}
-    fn append_mpid() {}
-}
-mod tests {
-    use super::*;
+        data.push(b'C');
+        data.write_u32::<NetworkEndian>(nanoseconds).unwrap(); // nanoseconds
+        data.write_u64::<NetworkEndian>(refno).unwrap(); // refno
+        data.write_u32::<NetworkEndian>(shares).unwrap(); // shares
 
-    fn returns_message() {}
-    fn updates_shares() {}
-    fn errors_is_missing() {}
+        Cursor::new(data)
+    }
+
+    pub fn cancel_order_v50(nanoseconds: u64, refno: u64, shares: u32) -> Cursor<Vec<u8>> {
+        let mut data = Vec::<u8>::new();
+        data.push(b'C');
+        data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
+        data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
+        data.write_u48::<NetworkEndian>(nanoseconds).unwrap(); // nanoseconds
+        data.write_u64::<NetworkEndian>(refno).unwrap(); // refno
+        data.write_u32::<NetworkEndian>(shares).unwrap(); // shares
+
+        Cursor::new(data)
+    }
+
+    #[test]
+    fn returns_message_and_updates_shares_v50() {
+        let mut data = cancel_order_v50(0, 0, 10);
+        let mut context = Context::new();
+        context.update_clock(0);
+        context.active_orders.insert(
+            0,
+            OrderState {
+                ticker: String::from("A"),
+                side: Side::Buy,
+                price: 0,
+                shares: 100,
+            },
+        );
+        let message = CancelOrder::read(&mut data, &Version::V50, &mut context).unwrap();
+        assert_eq!(*message.kind(), 'C');
+        assert_eq!(context.active_orders[&0].shares, 90);
+    }
+
+    #[test]
+    fn returns_message_and_updates_shares_v41() {
+        let mut data = cancel_order_v41(0, 0, 10);
+        let mut context = Context::new();
+        context.update_clock(0);
+        context.active_orders.insert(
+            0,
+            OrderState {
+                ticker: String::from("A"),
+                side: Side::Buy,
+                price: 0,
+                shares: 100,
+            },
+        );
+        let message = CancelOrder::read(&mut data, &Version::V41, &mut context).unwrap();
+        assert_eq!(*message.kind(), 'C');
+        assert_eq!(context.active_orders[&0].shares, 90);
+    }
+
+    #[test]
+    #[should_panic(expected = "Order not found")]
+    fn panics_with_message() {
+        let mut data = cancel_order_v41(0, 0, 10);
+        let mut context = Context::new();
+        context.update_clock(0);
+        let _ = CancelOrder::read(&mut data, &Version::V41, &mut context).unwrap();
+    }
 }
