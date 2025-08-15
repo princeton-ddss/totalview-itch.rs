@@ -11,11 +11,11 @@ use super::{IntoOrderMessage, OrderMessage};
 pub struct CancelOrder {
     nanoseconds: u64,
     kind: char,
-    ticker: String,
+    pub(crate) ticker: String,
     side: Side,
     price: u32,
     shares: u32,
-    refno: u64,
+    pub(crate) refno: u64,
 }
 
 impl ReadMessage for CancelOrder {
@@ -73,48 +73,18 @@ impl IntoOrderMessage for CancelOrder {
 
 #[cfg(test)]
 mod tests {
-    use crate::message::OrderState;
-
     use super::*;
-    use byteorder::{NetworkEndian, WriteBytesExt};
-    use std::io::Cursor;
-
-    pub fn cancel_order_v41(nanoseconds: u32, refno: u64, shares: u32) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'C');
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap(); // nanoseconds
-        data.write_u64::<NetworkEndian>(refno).unwrap(); // refno
-        data.write_u32::<NetworkEndian>(shares).unwrap(); // shares
-
-        Cursor::new(data)
-    }
-
-    pub fn cancel_order_v50(nanoseconds: u64, refno: u64, shares: u32) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'C');
-        data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
-        data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
-        data.write_u48::<NetworkEndian>(nanoseconds).unwrap(); // nanoseconds
-        data.write_u64::<NetworkEndian>(refno).unwrap(); // refno
-        data.write_u32::<NetworkEndian>(shares).unwrap(); // shares
-
-        Cursor::new(data)
-    }
+    use crate::message::test_helpers::message_builders::*;
+    use crate::message::{OrderState, Side};
 
     #[test]
     fn returns_message_and_updates_shares_v50() {
         let mut data = cancel_order_v50(0, 0, 10);
         let mut context = Context::new();
         context.update_clock(0);
-        context.active_orders.insert(
-            0,
-            OrderState {
-                ticker: String::from("A"),
-                side: Side::Buy,
-                price: 0,
-                shares: 100,
-            },
-        );
+        context
+            .active_orders
+            .insert(0, create_order_state("A", Side::Buy, 0, 100));
         let message = CancelOrder::read(&mut data, &Version::V50, &mut context).unwrap();
         assert_eq!(*message.kind(), 'C');
         assert_eq!(context.active_orders[&0].shares, 90);
@@ -125,15 +95,9 @@ mod tests {
         let mut data = cancel_order_v41(0, 0, 10);
         let mut context = Context::new();
         context.update_clock(0);
-        context.active_orders.insert(
-            0,
-            OrderState {
-                ticker: String::from("A"),
-                side: Side::Buy,
-                price: 0,
-                shares: 100,
-            },
-        );
+        context
+            .active_orders
+            .insert(0, create_order_state("A", Side::Buy, 0, 100));
         let message = CancelOrder::read(&mut data, &Version::V41, &mut context).unwrap();
         assert_eq!(*message.kind(), 'C');
         assert_eq!(context.active_orders[&0].shares, 90);

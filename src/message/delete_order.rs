@@ -97,31 +97,9 @@ impl IntoOrderMessage for DeleteOrder {
 
 #[cfg(test)]
 mod tests {
-    use crate::message::OrderState;
-
     use super::*;
-    use byteorder::{NetworkEndian, WriteBytesExt};
-    use std::io::Cursor;
-
-    pub fn delete_order_v41(nanoseconds: u32, refno: u64) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'D');
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-
-        Cursor::new(data)
-    }
-
-    pub fn delete_order_v50(nanoseconds: u64, refno: u64) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'D');
-        data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
-        data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
-        data.write_u48::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-
-        Cursor::new(data)
-    }
+    use crate::message::test_helpers::message_builders::*;
+    use crate::message::{OrderState, Side};
 
     #[test]
     fn returns_message_and_removes_from_context_v50() {
@@ -130,12 +108,7 @@ mod tests {
         context.update_clock(0);
         context.active_orders.insert(
             98765,
-            OrderState {
-                ticker: "NVDA".to_string(),
-                side: Side::Sell,
-                price: 45000,
-                shares: 150,
-            },
+            create_order_state("NVDA", Side::Sell, 45000, 150),
         );
 
         let message = DeleteOrder::read(&mut data, &Version::V50, &mut context).unwrap();

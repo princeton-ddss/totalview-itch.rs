@@ -38,29 +38,8 @@ impl ReadMessage for SystemEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::message::test_helpers::message_builders::*;
     use crate::message::{OrderState, Side};
-    use byteorder::{NetworkEndian, WriteBytesExt};
-    use std::io::Cursor;
-
-    pub fn system_event_v41(nanoseconds: u32, event_code: char) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'S');
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap();
-        data.push(event_code as u8);
-
-        Cursor::new(data)
-    }
-
-    pub fn system_event_v50(nanoseconds: u64, event_code: char) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'S');
-        data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
-        data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
-        data.write_u48::<NetworkEndian>(nanoseconds).unwrap();
-        data.push(event_code as u8);
-
-        Cursor::new(data)
-    }
 
     #[test]
     fn returns_start_messages_event_v50() {

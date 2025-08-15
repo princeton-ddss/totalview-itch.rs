@@ -14,7 +14,7 @@ use super::{IntoOrderMessage, OrderMessage};
 pub struct AddOrder {
     nanoseconds: u64,
     kind: char,
-    ticker: String,
+    pub(crate) ticker: String,
     side: Side,
     price: u32,
     shares: u32,
@@ -117,93 +117,8 @@ impl IntoOrderMessage for AddOrder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use byteorder::{NetworkEndian, WriteBytesExt};
-    use std::io::Cursor;
-
-    pub fn add_order_v41(
-        nanoseconds: u32,
-        refno: u64,
-        side: Side,
-        shares: u32,
-        ticker: &str,
-        price: u32,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'A');
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-        data.push(match side {
-            Side::Buy => b'B',
-            Side::Sell => b'S',
-        });
-        data.write_u32::<NetworkEndian>(shares).unwrap();
-        let mut ticker_bytes = [b' '; 8];
-        let ticker_bytes_slice = ticker.as_bytes();
-        ticker_bytes[..ticker_bytes_slice.len()].copy_from_slice(ticker_bytes_slice);
-        data.extend_from_slice(&ticker_bytes);
-        data.write_u32::<NetworkEndian>(price).unwrap();
-
-        Cursor::new(data)
-    }
-
-    pub fn add_order_v50(
-        nanoseconds: u64,
-        refno: u64,
-        side: Side,
-        shares: u32,
-        ticker: &str,
-        price: u32,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'A');
-        data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
-        data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
-        data.write_u48::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-        data.push(match side {
-            Side::Buy => b'B',
-            Side::Sell => b'S',
-        });
-        data.write_u32::<NetworkEndian>(shares).unwrap();
-        let mut ticker_bytes = [b' '; 8];
-        let ticker_bytes_slice = ticker.as_bytes();
-        ticker_bytes[..ticker_bytes_slice.len()].copy_from_slice(ticker_bytes_slice);
-        data.extend_from_slice(&ticker_bytes);
-        data.write_u32::<NetworkEndian>(price).unwrap();
-
-        Cursor::new(data)
-    }
-
-    pub fn add_order_with_mpid_v41(
-        nanoseconds: u32,
-        refno: u64,
-        side: Side,
-        shares: u32,
-        ticker: &str,
-        price: u32,
-        mpid: &str,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'F'); // Attribution message type
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-        data.push(match side {
-            Side::Buy => b'B',
-            Side::Sell => b'S',
-        });
-        data.write_u32::<NetworkEndian>(shares).unwrap();
-        let mut ticker_bytes = [b' '; 8];
-        let ticker_bytes_slice = ticker.as_bytes();
-        ticker_bytes[..ticker_bytes_slice.len()].copy_from_slice(ticker_bytes_slice);
-        data.extend_from_slice(&ticker_bytes);
-        data.write_u32::<NetworkEndian>(price).unwrap();
-        let mut mpid_bytes = [b' '; 4];
-        let mpid_bytes_slice = mpid.as_bytes();
-        mpid_bytes[..mpid_bytes_slice.len()].copy_from_slice(mpid_bytes_slice);
-        data.extend_from_slice(&mpid_bytes);
-
-        Cursor::new(data)
-    }
+    use crate::message::test_helpers::message_builders::*;
+    use crate::message::{OrderState, Side};
 
     #[test]
     fn returns_message_and_updates_context_v50() {

@@ -85,62 +85,9 @@ impl IntoOrderMessage for ExecuteOrder {
 
 #[cfg(test)]
 mod tests {
-    use crate::message::OrderState;
-
     use super::*;
-    use byteorder::{NetworkEndian, WriteBytesExt};
-    use std::io::Cursor;
-
-    pub fn execute_order_v41(
-        nanoseconds: u32,
-        refno: u64,
-        shares: u32,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'E');
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-        data.write_u32::<NetworkEndian>(shares).unwrap();
-        data.write_u64::<NetworkEndian>(12345678).unwrap(); // match number
-
-        Cursor::new(data)
-    }
-
-    pub fn execute_order_v50(
-        nanoseconds: u64,
-        refno: u64,
-        shares: u32,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'E');
-        data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
-        data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
-        data.write_u48::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-        data.write_u32::<NetworkEndian>(shares).unwrap();
-        data.write_u64::<NetworkEndian>(87654321).unwrap(); // match number
-
-        Cursor::new(data)
-    }
-
-    pub fn execute_order_with_price_v41(
-        nanoseconds: u32,
-        refno: u64,
-        shares: u32,
-        printable: bool,
-        execution_price: u32,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'C');
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(refno).unwrap();
-        data.write_u32::<NetworkEndian>(shares).unwrap();
-        data.write_u64::<NetworkEndian>(11223344).unwrap(); // match number
-        data.push(if printable { b'Y' } else { b'N' });
-        data.write_u32::<NetworkEndian>(execution_price).unwrap();
-
-        Cursor::new(data)
-    }
+    use crate::message::test_helpers::message_builders::*;
+    use crate::message::{OrderState, Side};
 
     #[test]
     fn returns_message_and_updates_shares_v50() {

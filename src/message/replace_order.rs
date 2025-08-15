@@ -65,47 +65,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::message::test_helpers::message_builders::*;
     use crate::message::{OrderState, Side};
-    use byteorder::{NetworkEndian, WriteBytesExt};
-    use std::io::Cursor;
-
-    pub fn replace_order_v41(
-        nanoseconds: u32,
-        old_refno: u64,
-        new_refno: u64,
-        new_shares: u32,
-        new_price: u32,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'U');
-        data.write_u32::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(old_refno).unwrap();
-        data.write_u64::<NetworkEndian>(new_refno).unwrap();
-        data.write_u32::<NetworkEndian>(new_shares).unwrap();
-        data.write_u32::<NetworkEndian>(new_price).unwrap();
-
-        Cursor::new(data)
-    }
-
-    pub fn replace_order_v50(
-        nanoseconds: u64,
-        old_refno: u64,
-        new_refno: u64,
-        new_shares: u32,
-        new_price: u32,
-    ) -> Cursor<Vec<u8>> {
-        let mut data = Vec::<u8>::new();
-        data.push(b'U');
-        data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
-        data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
-        data.write_u48::<NetworkEndian>(nanoseconds).unwrap();
-        data.write_u64::<NetworkEndian>(old_refno).unwrap();
-        data.write_u64::<NetworkEndian>(new_refno).unwrap();
-        data.write_u32::<NetworkEndian>(new_shares).unwrap();
-        data.write_u32::<NetworkEndian>(new_price).unwrap();
-
-        Cursor::new(data)
-    }
 
     #[test]
     fn returns_delete_and_add_orders_v50() {
