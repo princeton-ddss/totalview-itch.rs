@@ -70,3 +70,37 @@ impl IntoOrderMessage for CancelOrder {
         }
     }
 }
+
+#[cfg(test)]
+mod helpers {
+    use super::*;
+    use byteorder::{NetworkEndian, WriteBytesExt};
+
+    fn add_order_v41() {
+        let mut data = Vec::<u8>::new();
+        data.push(b'A');
+        data.write_u16();
+        data.data
+    }
+    fn add_order_v50() {}
+    fn append_kind(data: &mut Vec<u8>, kind: char) {
+        data.push(kind as u8);
+    }
+    fn append_size(data: &mut Vec<u8>, size: u16) {
+        data.write_u16::<NetworkEndian>(size).unwrap();
+    }
+    fn append_nanoseconds(data: &mut Vec<u8>, nano: u48) {}
+    fn append_refno() {}
+    fn append_side() {}
+    fn append_shares() {}
+    fn append_ticker() {}
+    fn append_price() {}
+    fn append_mpid() {}
+}
+mod tests {
+    use super::*;
+
+    fn returns_message() {}
+    fn updates_shares() {}
+    fn errors_is_missing() {}
+}

@@ -1,11 +1,9 @@
 use std::collections::{HashSet, VecDeque};
-use std::io::{Read, Result, Seek, SeekFrom};
+use std::io::{Error, ErrorKind, Read, Result, Seek, SeekFrom};
 
 use crate::buffer::Peek;
 use crate::constants::EVERY_TICKER;
-use crate::message::{
-    peek_kind, peek_refno_ahead, peek_ticker_ahead, read_kind, read_seconds, read_size,
-};
+use crate::message::{peek_kind, peek_refno, peek_ticker, read_kind, read_seconds, read_size};
 use crate::message::{
     read_replace_order, AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, SystemEvent,
 };
@@ -37,7 +35,6 @@ impl Parser {
         }
 
         loop {
-            // TODO: Add logic to handle reaching EOF
             let size = read_size(buffer)?;
             let kind = peek_kind(buffer)?;
 
@@ -61,9 +58,16 @@ impl Parser {
             match msg {
                 Some(m) => return Ok(m),
                 None => {
-                    let offset = size as i64;
-                    buffer.seek(SeekFrom::Current(offset))?;
-                    continue;
+                    buffer.seek(SeekFrom::Current(size as i64))?;
+                    match buffer.peek_ahead(0, 1) {
+                        Err(_) => {
+                            return Err(Error::new(
+                                ErrorKind::InvalidData,
+                                "File stream is complete.",
+                            ))
+                        }
+                        Ok(_) => continue,
+                    }
                 }
             }
         }
@@ -84,10 +88,7 @@ impl Parser {
         let should_parse = if self.tickers.contains(EVERY_TICKER) {
             true
         } else {
-            let ticker = match self.version {
-                Version::V41 => peek_ticker_ahead(buffer, 18)?,
-                Version::V50 => peek_ticker_ahead(buffer, 24)?,
-            };
+            let ticker = peek_ticker(buffer, &self.version)?;
             self.tickers.contains(&ticker)
         };
 
@@ -103,10 +104,7 @@ impl Parser {
     where
         T: Read + Seek + Peek,
     {
-        let refno = match self.version {
-            Version::V41 => peek_refno_ahead(buffer, 5)?,
-            Version::V50 => peek_refno_ahead(buffer, 11)?,
-        };
+        let refno = peek_refno(buffer, &self.version)?;
         if self.context.has_order(refno) {
             let data = ExecuteOrder::read(buffer, &self.version, &mut self.context)?;
             Ok(Some(Message::ExecuteOrder(data)))
@@ -119,10 +117,7 @@ impl Parser {
     where
         T: Read + Seek + Peek,
     {
-        let refno = match self.version {
-            Version::V41 => peek_refno_ahead(buffer, 5)?,
-            Version::V50 => peek_refno_ahead(buffer, 11)?,
-        };
+        let refno = peek_refno(buffer, &self.version)?;
         if self.context.has_order(refno) {
             let data = CancelOrder::read(buffer, &self.version, &mut self.context)?;
             Ok(Some(Message::CancelOrder(data)))
@@ -135,10 +130,7 @@ impl Parser {
     where
         T: Read + Seek + Peek,
     {
-        let refno = match self.version {
-            Version::V41 => peek_refno_ahead(buffer, 5)?,
-            Version::V50 => peek_refno_ahead(buffer, 11)?,
-        };
+        let refno = peek_refno(buffer, &self.version)?;
         if self.context.has_order(refno) {
             let data = DeleteOrder::read(buffer, &self.version, &mut self.context)?;
             Ok(Some(Message::DeleteOrder(data)))
@@ -147,14 +139,13 @@ impl Parser {
         }
     }
 
+    // Why not return a ReplaceOrde and deal with splitting it outside? The deque works, but it is
+    // a bit strange...
     fn parse_replace_order<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
     where
         T: Read + Seek + Peek,
     {
-        let refno = match self.version {
-            Version::V41 => peek_refno_ahead(buffer, 5)?,
-            Version::V50 => peek_refno_ahead(buffer, 11)?,
-        };
+        let refno = peek_refno(buffer, &self.version)?;
         if self.context.has_order(refno) {
             let (delete_order, add_order) =
                 read_replace_order(buffer, &self.version, &mut self.context)?;
@@ -163,5 +154,29 @@ impl Parser {
         } else {
             Ok(None)
         }
+    }
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn returns_an_error() {
+        // extract_message returns an err when there are no more supported messages
+    }
+
+    #[test]
+    fn updates_clock() {
+        // extract_message updates clock if the next message is type 'T'
+    }
+
+    #[test]
+    fn ignores_tickers() {
+        // extract_messages ignores add orders for tickers not in self.tickers
+    }
+
+    #[test]
+    fn ignores_refnos() {
+        // extract_messages ignores modify orders for refnos not in self.context
     }
 }

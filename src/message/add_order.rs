@@ -113,3 +113,10 @@ impl IntoOrderMessage for AddOrder {
         }
     }
 }
+
+#[cfg(test)]
+
+mod tests {
+    fn updates_context() {}
+    fn returns_message() {}
+}
