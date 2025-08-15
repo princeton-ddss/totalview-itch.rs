@@ -61,7 +61,7 @@ pub enum Side {
     Sell,
 }
 
-struct OrderState {
+pub(crate) struct OrderState {
     ticker: String,
     side: Side,
     price: u32,
@@ -69,8 +69,8 @@ struct OrderState {
 }
 
 pub(crate) struct Context {
-    clock: Option<u32>, // Tracks number of seconds past midnight (applicable for Version 4.1)
-    active_orders: HashMap<u64, OrderState>,
+    pub(crate) clock: Option<u32>, // Tracks number of seconds past midnight (applicable for Version 4.1)
+    pub(crate) active_orders: HashMap<u64, OrderState>,
 }
 
 impl Context {
@@ -245,6 +245,14 @@ mod tests {
     use intx::U48;
 
     #[test]
+    fn read_empty_buffer_errors() {
+        let bytes = vec![];
+        let mut buffer = bytes.as_slice();
+        let result = read_size(&mut buffer);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn read_nanoseconds_v41() {
         let bytes = 999_u32.to_be_bytes();
         let mut buffer = bytes.as_slice();
@@ -319,3 +327,6 @@ mod tests {
         assert_eq!(context.has_order(1), true);
     }
 }
+
+#[cfg(test)]
+pub mod test_helpers;
