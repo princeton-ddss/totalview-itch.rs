@@ -230,3 +230,84 @@ pub struct OrderMessage {
 pub trait IntoOrderMessage {
     fn into_order_message(self, date: String) -> OrderMessage;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use intx::U48;
+
+    #[test]
+    fn read_nanoseconds_v41() {
+        let bytes = 999_u32.to_be_bytes();
+        let mut buffer = bytes.as_slice();
+        assert_eq!(
+            read_nanoseconds(&mut buffer, &Version::V41, Some(1)).unwrap(),
+            1_000_000_999
+        );
+    }
+
+    #[test]
+    fn read_nanoseconds_v50() {
+        let bytes = U48::from(999u32).to_be_bytes();
+        let mut buffer = bytes.as_slice();
+        assert_eq!(
+            read_nanoseconds(&mut buffer, &Version::V50, Some(1)).unwrap(),
+            999
+        );
+    }
+
+    #[test]
+    fn read_printable_is_true() {
+        let mut buffer = "Y".as_bytes();
+        assert_eq!(read_printable(&mut buffer).unwrap(), true);
+    }
+    #[test]
+    fn read_printable_is_false() {
+        let mut buffer = "N".as_bytes();
+        assert_eq!(read_printable(&mut buffer).unwrap(), false);
+    }
+
+    #[test]
+    fn read_unknown_event_code() {
+        let mut buffer = "X".as_bytes();
+        assert!(read_event_code(&mut buffer).is_err());
+    }
+
+    #[test]
+    fn read_unknown_side() {
+        let mut buffer = "X".as_bytes();
+        assert!(read_side(&mut buffer).is_err());
+    }
+
+    #[test]
+    fn read_ticker_trimmed() {
+        let mut buffer = "AAPL    ".as_bytes();
+        assert_eq!(read_ticker(&mut buffer).unwrap(), "AAPL");
+    }
+
+    #[test]
+    fn update_clock() {
+        let mut context = Context::new();
+        context.update_clock(1);
+        assert_eq!(context.clock, Some(1));
+    }
+
+    #[test]
+    fn missing_order() {
+        let context = Context::new();
+        assert_eq!(context.has_order(1), false);
+    }
+
+    #[test]
+    fn present_order() {
+        let mut context = Context::new();
+        let order = OrderState {
+            ticker: String::from("A"),
+            side: Side::Buy,
+            price: 0,
+            shares: 0,
+        };
+        context.active_orders.insert(1, order);
+        assert_eq!(context.has_order(1), true);
+    }
+}

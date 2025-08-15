@@ -14,3 +14,6 @@ parquet = "50.0.0"
 serde = { version="1.0.195", features=["derive"] }
 strum = "0.25.0"
 strum_macros = "0.25.3"
+
+[dev-dependencies]
+intx = "0.1.0"
