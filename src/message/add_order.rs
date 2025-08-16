@@ -118,7 +118,7 @@ impl IntoOrderMessage for AddOrder {
 mod tests {
     use super::*;
     use crate::message::test_helpers::message_builders::*;
-    use crate::message::{OrderState, Side};
+    use crate::message::Side;
 
     #[test]
     fn returns_message_and_updates_context_v50() {
