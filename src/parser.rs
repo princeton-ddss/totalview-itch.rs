@@ -3,9 +3,7 @@ use std::io::{Error, ErrorKind, Read, Result, Seek, SeekFrom};
 
 use crate::buffer::Peek;
 use crate::constants::EVERY_TICKER;
-use crate::message::{
-    self, peek_kind, peek_refno, peek_ticker, read_kind, read_seconds, read_size,
-};
+use crate::message::{peek_kind, peek_refno, peek_ticker, read_kind, read_seconds, read_size};
 use crate::message::{
     read_replace_order, AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, SystemEvent,
 };
@@ -61,7 +59,7 @@ impl Parser {
                 Some(m) => return Ok(m),
                 None => {
                     buffer.seek(SeekFrom::Current(size as i64))?;
-                    match buffer.peek_ahead(0, 1) {
+                    match buffer.peek(0, 1) {
                         Err(_) => {
                             return Err(Error::new(
                                 ErrorKind::InvalidData,
@@ -72,40 +70,6 @@ impl Parser {
                     }
                 }
             }
-        }
-    }
-
-    pub fn extract_message_exactly<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
-    where
-        T: Read + Seek + Peek,
-    {
-        if !self.buf.is_empty() {
-            return Ok(Some(self.buf.pop_front().unwrap()));
-        }
-
-        let size = read_size(buffer)?;
-        let kind = peek_kind(buffer)?;
-
-        if kind == 'T' {
-            let _kind = read_kind(buffer)?;
-            let seconds = read_seconds(buffer)?;
-            self.context.update_clock(seconds);
-            return Ok(None);
-        }
-
-        let msg = match kind {
-            'S' => self.parse_system_event(buffer)?,
-            'A' | 'F' => self.parse_add_order(buffer)?,
-            'E' | 'C' => self.parse_execute_order(buffer)?,
-            'X' => self.parse_cancel_order(buffer)?,
-            'D' => self.parse_delete_order(buffer)?,
-            'U' => self.parse_replace_order(buffer)?,
-            _ => None,
-        };
-
-        match msg {
-            Some(m) => return Ok(Some(m)),
-            None => Ok(None),
         }
     }
 
@@ -196,7 +160,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::buffer::Buffer;
+    use crate::buffer::BufFile;
     use crate::message::test_helpers::message_builders::*;
     use crate::message::Side;
     use assert_fs::{prelude::FileWriteBin, NamedTempFile};
@@ -212,17 +176,19 @@ mod tests {
         parser.context.update_clock(0);
 
         // add messages to the file
-        // let messages = vec![
-        //     with_length_prefix(add_order_v41(0, 89402372340, Side::Buy, 100, "X", 1000)),
-        //     with_length_prefix(add_order_v41(0, 23451234098, Side::Buy, 100, "Y", 1000)),
-        //     with_length_prefix(add_order_v41(0, 98290347401, Side::Buy, 100, "Z", 1000)),
-        // ];
-        // let data = create_message_sequence(messages);
-        // sinkfile.write_binary(&data.into_inner()).unwrap();
-        let mut buffile = Buffer::<1024>::new(sinkfile.path()).unwrap();
+        // let messages = vec![];
+        let messages = vec![
+            add_order_v41(0, 89402372340, Side::Buy, 100, "X", 1000),
+            add_order_v41(0, 23451234098, Side::Buy, 100, "Y", 1000),
+            add_order_v41(0, 98290347401, Side::Buy, 100, "Z", 1000),
+        ];
+        let data = create_message_sequence(messages);
+        sinkfile.write_binary(&data.into_inner()).unwrap();
+        let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        let message = parser.extract_message_exactly(&mut buffile);
+        // let message = parser.extract_message_exactly(&mut buffile);
+        let message = parser.extract_message(&mut buffile);
 
         // check that the result is an error
         assert!(message.is_err());
@@ -241,23 +207,24 @@ mod tests {
 
         // add messages to the file
         let messages = vec![
-            with_length_prefix(timestamp_v41(60)),
-            with_length_prefix(system_event_v41(0, 'O')),
-            with_length_prefix(add_order_v41(0, 89402372340, Side::Buy, 100, "A", 1000)),
+            timestamp_v41(3600),
+            system_event_v41(0, 'O'),
+            add_order_v41(0, 89402372340, Side::Buy, 100, "A", 1000),
         ];
         let data = create_message_sequence(messages);
         sinkfile.write_binary(&data.into_inner()).unwrap();
-        let mut buffile = Buffer::<1024>::new(sinkfile.path()).unwrap();
+        let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        let message = parser.extract_message_exactly(&mut buffile).unwrap();
+        // let message = parser.extract_message_exactly(&mut buffile).unwrap();
+        let message = parser.extract_message(&mut buffile).unwrap();
 
         // check that the clock updated
-        assert_eq!(parser.context.clock.unwrap(), 60);
+        assert_eq!(parser.context.clock.unwrap(), 3600);
 
         // check that the return message matches the system message
-        assert!(message.is_none());
-        // assert!(matches!(message, Message::SystemEvent(_)));
+        // assert!(message.is_none());
+        assert!(matches!(message, Message::SystemEvent(_)));
     }
 
     #[test]
@@ -273,31 +240,27 @@ mod tests {
 
         // add messages to the file
         let messages = vec![
-            with_length_prefix(add_order_v41(0, 89402372340, Side::Buy, 100, "X", 1000)),
-            with_length_prefix(add_order_v41(0, 09234509829, Side::Buy, 100, "A", 1000)),
+            add_order_v41(0, 89402372340, Side::Buy, 100, "X", 1000),
+            add_order_v41(0, 09234509829, Side::Buy, 100, "A", 1000),
         ];
         let data = create_message_sequence(messages);
         sinkfile.write_binary(&data.into_inner()).unwrap();
-        let mut buffile = Buffer::<1024>::new(sinkfile.path()).unwrap();
+        let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        let message = parser.extract_message_exactly(&mut buffile).unwrap();
+        // let message = parser.extract_message_exactly(&mut buffile).unwrap();
+        let message = parser.extract_message(&mut buffile).unwrap();
 
         // check that the return message matches the system message
-        assert!(message.is_none());
-        // if let Message::AddOrder(add_order) = message {
-        //     assert_eq!(add_order.ticker, "A");
-        // }
+        // assert!(message.is_none());
+        if let Message::AddOrder(add_order) = message {
+            assert_eq!(add_order.ticker, "A");
+        }
     }
 
     #[test]
     // extract_message ignores modify orders for refnos not in self.context
     fn ignores_modify_order_refnos() {
-        // create a source that is read, seek and peek
-        // create a parser and add an order to its context
-        // add two Delete messages to the source: only the second one should match the context
-        // extract the next message and check that it matches the second message in source
-
         // create a temporary file
         let sinkfile = NamedTempFile::new("test_messages.bin").unwrap();
 
@@ -310,20 +273,21 @@ mod tests {
 
         // add messages to the file
         let messages = vec![
-            with_length_prefix(cancel_order_v41(0, 97890234892, 100)),
-            with_length_prefix(cancel_order_v41(0, 89402372340, 100)),
+            cancel_order_v41(0, 97890234892, 100),
+            cancel_order_v41(0, 89402372340, 100),
         ];
         let data = create_message_sequence(messages);
         sinkfile.write_binary(&data.into_inner()).unwrap();
-        let mut buffile = Buffer::<1024>::new(sinkfile.path()).unwrap();
+        let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        let message = parser.extract_message_exactly(&mut buffile).unwrap();
+        // let message = parser.extract_message_exactly(&mut buffile).unwrap();
+        let message = parser.extract_message(&mut buffile).unwrap();
 
         // check that the return message matches the system message
-        assert!(message.is_none());
-        // if let Message::CancelOrder(cancel_order) = message {
-        //     assert_eq!(cancel_order.refno, 89402372340);
-        // }
+        // assert!(message.is_none());
+        if let Message::CancelOrder(cancel_order) = message {
+            assert_eq!(cancel_order.refno, 89402372340);
+        }
     }
 }
