@@ -75,7 +75,7 @@ impl IntoOrderMessage for CancelOrder {
 mod tests {
     use super::*;
     use crate::message::test_helpers::message_builders::*;
-    use crate::message::{OrderState, Side};
+    use crate::message::Side;
 
     #[test]
     fn returns_message_and_updates_shares_v50() {
@@ -86,7 +86,7 @@ mod tests {
             .active_orders
             .insert(0, create_order_state("A", Side::Buy, 0, 100));
         let message = CancelOrder::read(&mut data, &Version::V50, &mut context).unwrap();
-        assert_eq!(*message.kind(), 'C');
+        assert_eq!(*message.kind(), 'X');
         assert_eq!(context.active_orders[&0].shares, 90);
     }
 
@@ -99,7 +99,7 @@ mod tests {
             .active_orders
             .insert(0, create_order_state("A", Side::Buy, 0, 100));
         let message = CancelOrder::read(&mut data, &Version::V41, &mut context).unwrap();
-        assert_eq!(*message.kind(), 'C');
+        assert_eq!(*message.kind(), 'X');
         assert_eq!(context.active_orders[&0].shares, 90);
     }
 
