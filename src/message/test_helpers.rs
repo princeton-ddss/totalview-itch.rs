@@ -2,7 +2,6 @@
 pub mod message_builders {
     use crate::message::{OrderState, Side};
     use byteorder::{NetworkEndian, WriteBytesExt};
-    use parquet::data_type::AsBytes;
     use std::io::Cursor;
 
     // Timestamp helpers
@@ -103,7 +102,7 @@ pub mod message_builders {
     // Cancel Order helpers
     pub fn cancel_order_v41(nanoseconds: u32, refno: u64, shares: u32) -> Cursor<Vec<u8>> {
         let mut data = Vec::<u8>::new();
-        data.push(b'C');
+        data.push(b'X');
         data.write_u32::<NetworkEndian>(nanoseconds).unwrap(); // nanoseconds
         data.write_u64::<NetworkEndian>(refno).unwrap(); // refno
         data.write_u32::<NetworkEndian>(shares).unwrap(); // shares
@@ -113,7 +112,7 @@ pub mod message_builders {
 
     pub fn cancel_order_v50(nanoseconds: u64, refno: u64, shares: u32) -> Cursor<Vec<u8>> {
         let mut data = Vec::<u8>::new();
-        data.push(b'C');
+        data.push(b'X');
         data.write_u16::<NetworkEndian>(0).unwrap(); // stock locate
         data.write_u16::<NetworkEndian>(0).unwrap(); // tracking number
         data.write_u48::<NetworkEndian>(nanoseconds).unwrap(); // nanoseconds
@@ -249,7 +248,12 @@ pub mod message_builders {
     }
 
     // Helper for creating OrderState for context setup
-    pub fn create_order_state(ticker: &str, side: Side, price: u32, shares: u32) -> OrderState {
+    pub(crate) fn create_order_state(
+        ticker: &str,
+        side: Side,
+        price: u32,
+        shares: u32,
+    ) -> OrderState {
         OrderState {
             ticker: ticker.to_string(),
             side,
@@ -273,11 +277,8 @@ pub mod message_builders {
         let mut combined_data = Vec::<u8>::new();
 
         for message in messages {
-            let message_data = message.into_inner();
-            combined_data
-                .write_u16::<NetworkEndian>(message_data.len() as u16)
-                .unwrap();
-            combined_data.extend_from_slice(&message_data);
+            let prefixed_message = with_length_prefix(message);
+            combined_data.extend_from_slice(&prefixed_message.into_inner());
         }
 
         Cursor::new(combined_data)
