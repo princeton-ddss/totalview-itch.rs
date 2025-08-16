@@ -190,29 +190,21 @@ pub(crate) fn read_seconds<T: Read>(buffer: &mut T) -> Result<u32> {
 }
 
 pub(crate) fn peek_kind<T: Peek>(buffer: &mut T) -> Result<char> {
-    let buf = buffer.peek_ahead(0, 1)?;
+    let buf = buffer.peek(0, 1)?;
     let kind = char::from(buf[0]);
     Ok(kind)
 }
 
-pub(crate) fn peek_ticker<T: Peek>(buffer: &mut T, version: &Version) -> Result<String> {
-    let ahead = match version {
-        Version::V41 => 18,
-        Version::V50 => 24,
-    };
-    let buf = buffer.peek_ahead(ahead, 8)?;
+pub(crate) fn peek_ticker_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<String> {
+    let buf = buffer.peek(ahead, 8)?;
     match String::from_utf8(buf) {
         Ok(s) => Ok(s.trim().to_string()),
         Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
     }
 }
 
-pub(crate) fn peek_refno<T: Peek>(buffer: &mut T, version: &Version) -> Result<u64> {
-    let ahead = match version {
-        Version::V41 => 5,
-        Version::V50 => 11,
-    };
-    let buf = buffer.peek_ahead(ahead, 8)?;
+pub(crate) fn peek_refno_ahead<T: Peek>(buffer: &mut T, ahead: usize) -> Result<u64> {
+    let buf = buffer.peek(ahead, 8)?;
     let arr: [u8; 8] = buf.try_into().unwrap();
     Ok(u64::from_be_bytes(arr))
 }
