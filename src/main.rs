@@ -1,13 +1,16 @@
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
-use lobsters::{message::IntoOrderMessage, Buffer, Message, Reader, Version, Writer, CSV};
+use lobsters::{
+    message::IntoOrderMessage, Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
+};
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs;
 use std::io::{ErrorKind, Seek};
 use std::path::Path;
 
-// TODO: Use logging instead of println!
-// TODO: Derive date from file name
-// TODO: Handle end of file logic
+// TODO: Print error to std:err
+// TODO: handle panics
 
 #[derive(Parser)]
 struct Cli {
@@ -23,10 +26,19 @@ struct Cli {
     #[arg(
         short,
         long,
+        default_value_t = 3,
+        help = "The number of order book levels to track."
+    )]
+    depth: usize,
+
+    #[arg(
+        short,
+        long,
         default_value_t = 1028,
-        help = "The size of internal buffer used for reading data."
+        help = "The size of internal buffer used for writing data."
     )]
     capacity: usize,
+
 }
 
 fn parse_filename<P: AsRef<Path>>(path: P) -> Option<(String, Version)> {
@@ -65,16 +77,16 @@ fn parse_filename<P: AsRef<Path>>(path: P) -> Option<(String, Version)> {
 fn main() {
     // Parse args and environment variables
     let args = Cli::parse();
-    let tickers = args.tickers.split(',').map(|s| s.to_string()).collect();
+    let tickers: HashSet<String> = args.tickers.split(',').map(|s| s.to_string()).collect();
     let (date, version) = parse_filename(&args.path).expect(
         "The filename should match the format 'SMMDDYY-vNN' where 'NN' is one of '41' or '50'.",
     );
 
     // Set up reader and writer
     let mut buffer = Buffer::new(&args.path).unwrap();
-    let mut reader = Reader::new(version, tickers);
+    let mut reader = Reader::new(version, tickers.clone());
     let backend = CSV::new("data").unwrap();
-    let mut writer = Writer::<10, CSV>::new(backend);
+    let mut writer = Writer::new(backend, args.capacity);
 
     // Set up progress bar
     let mut messages_read = 0;
@@ -88,6 +100,15 @@ fn main() {
             .progress_chars("#>-"),
     );
 
+    // Create order books for each ticker
+    let mut order_books: HashMap<String, OrderBook> = HashMap::new();
+    for ticker in &tickers {
+        if ticker != "*" {
+            // Skip wildcard
+            order_books.insert(ticker.clone(), OrderBook::new(ticker.clone()));
+        }
+    }
+
     // Begin main loop...
     loop {
         let current_pos = buffer.stream_position().unwrap();
@@ -100,18 +121,68 @@ fn main() {
 
                 match msg {
                     Message::AddOrder(data) => {
+                        // Update order book
+                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            order_book.add_order(*data.side(), *data.price(), *data.shares());
+                            
+                            // Create and write snapshot
+                            let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth); // Top 10 levels
+                            writer.write_snapshot(snapshot).unwrap();
+                        }
+
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
                     }
                     Message::CancelOrder(data) => {
+                        // Update order book
+                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            if let Err(e) =
+                                order_book.remove_order(*data.side(), *data.price(), *data.shares())
+                            {
+                                eprintln!("Warning: Failed to cancel order: {}", e);
+                            } else {
+                                // Create and write snapshot only if update succeeded
+                                let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
+                                writer.write_snapshot(snapshot).unwrap();
+                            }
+                        }
+
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
                     }
                     Message::DeleteOrder(data) => {
+                        // Update order book
+                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            if let Err(e) =
+                                order_book.remove_order(*data.side(), *data.price(), *data.shares())
+                            {
+                                eprintln!("Warning: Failed to delete order: {}", e);
+                            } else {
+                                // Create and write snapshot only if update succeeded
+                                let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
+                                writer.write_snapshot(snapshot).unwrap();
+                            }
+                        }
+
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
                     }
                     Message::ExecuteOrder(data) => {
+                        // Update order book
+                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            if let Err(e) = order_book.execute_order(
+                                *data.side(),
+                                *data.price(),
+                                *data.shares(),
+                            ) {
+                                eprintln!("Warning: Failed to execute order: {}", e);
+                            } else {
+                                // Create and write snapshot only if update succeeded
+                                let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
+                                writer.write_snapshot(snapshot).unwrap();
+                            }
+                        }
+
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
                     }
