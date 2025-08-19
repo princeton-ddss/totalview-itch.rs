@@ -1,6 +1,36 @@
 use std::fs::File;
-use std::io::{BufReader, Read, Result, Seek, SeekFrom};
+use std::io::{BufReader, Cursor, Read, Result, Seek, SeekFrom};
 use std::path::Path;
+
+pub struct Buffer {
+    cursor: Cursor<Vec<u8>>,
+}
+
+impl Buffer {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let inner = std::fs::read(path)?;
+        let cursor = Cursor::new(inner);
+        Ok(Self { cursor })
+    }
+
+    pub fn position(&mut self) -> u64 {
+        self.cursor.position()
+    }
+}
+
+impl Read for Buffer {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        self.cursor.read(buf)
+    }
+}
+
+impl Seek for Buffer {
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+        self.cursor.seek(pos)
+    }
+}
+
+impl Peek for Buffer {}
 
 pub struct BufFile {
     reader: BufReader<File>,
@@ -17,6 +47,11 @@ impl BufFile {
         let file = File::open(filepath)?;
         let reader = BufReader::with_capacity(capacity, file);
         Ok(Self { reader })
+    }
+
+    pub fn position(&mut self) -> Result<u64> {
+        self.reader.stream_position()
+        // self.reader.seek(SeekFrom::Current(0))
     }
 }
 

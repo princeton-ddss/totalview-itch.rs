@@ -262,7 +262,7 @@ pub mod message_builders {
         }
     }
 
-    // Helper for writing message length prefix (useful for parser tests)
+    // Helper for writing message length prefix (useful for reader tests)
     pub fn with_length_prefix(message_cursor: Cursor<Vec<u8>>) -> Cursor<Vec<u8>> {
         let message_data = message_cursor.into_inner();
         let mut data = Vec::<u8>::new();
@@ -272,7 +272,7 @@ pub mod message_builders {
         Cursor::new(data)
     }
 
-    // Helper for creating multiple messages in sequence (useful for parser tests)
+    // Helper for creating multiple messages in sequence (useful for reader tests)
     pub fn create_message_sequence(messages: Vec<Cursor<Vec<u8>>>) -> Cursor<Vec<u8>> {
         let mut combined_data = Vec::<u8>::new();
 

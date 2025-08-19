@@ -9,14 +9,14 @@ use crate::message::{
 };
 use crate::message::{Context, Message, ReadMessage, Version};
 
-pub struct Parser {
+pub struct Reader {
     version: Version,
     tickers: HashSet<String>,
     context: Context,
     buf: VecDeque<Message>, // To handle the case where multiple messages are parsed at once
 }
 
-impl Parser {
+impl Reader {
     pub fn new(version: Version, tickers: HashSet<String>) -> Self {
         Self {
             version,
@@ -171,9 +171,9 @@ mod tests {
         // create a temporary file
         let sinkfile = NamedTempFile::new("test_messages.bin").unwrap();
 
-        // create a parser with *no* tickers
-        let mut parser = Parser::new(Version::V41, HashSet::new());
-        parser.context.update_clock(0);
+        // create a reader with *no* tickers
+        let mut reader = Reader::new(Version::V41, HashSet::new());
+        reader.context.update_clock(0);
 
         // add messages to the file
         // let messages = vec![];
@@ -187,8 +187,8 @@ mod tests {
         let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        // let message = parser.extract_message_exactly(&mut buffile);
-        let message = parser.extract_message(&mut buffile);
+        // let message = reader.extract_message_exactly(&mut buffile);
+        let message = reader.extract_message(&mut buffile);
 
         // check that the result is an error
         assert!(message.is_err());
@@ -200,10 +200,10 @@ mod tests {
         // create a temporary file
         let sinkfile = NamedTempFile::new("test_messages.bin").unwrap();
 
-        // create a parser with a ticker
+        // create a reader with a ticker
         let tickers = HashSet::from(["A".to_string()]);
-        let mut parser = Parser::new(Version::V41, tickers);
-        parser.context.update_clock(0);
+        let mut reader = Reader::new(Version::V41, tickers);
+        reader.context.update_clock(0);
 
         // add messages to the file
         let messages = vec![
@@ -216,11 +216,11 @@ mod tests {
         let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        // let message = parser.extract_message_exactly(&mut buffile).unwrap();
-        let message = parser.extract_message(&mut buffile).unwrap();
+        // let message = reader.extract_message_exactly(&mut buffile).unwrap();
+        let message = reader.extract_message(&mut buffile).unwrap();
 
         // check that the clock updated
-        assert_eq!(parser.context.clock.unwrap(), 3600);
+        assert_eq!(reader.context.clock.unwrap(), 3600);
 
         // check that the return message matches the system message
         // assert!(message.is_none());
@@ -233,10 +233,10 @@ mod tests {
         // create a temporary file
         let sinkfile = NamedTempFile::new("test_messages.bin").unwrap();
 
-        // create a parser with a ticker
+        // create a reader with a ticker
         let tickers = HashSet::from(["A".to_string()]);
-        let mut parser = Parser::new(Version::V41, tickers);
-        parser.context.update_clock(0);
+        let mut reader = Reader::new(Version::V41, tickers);
+        reader.context.update_clock(0);
 
         // add messages to the file
         let messages = vec![
@@ -248,8 +248,8 @@ mod tests {
         let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        // let message = parser.extract_message_exactly(&mut buffile).unwrap();
-        let message = parser.extract_message(&mut buffile).unwrap();
+        // let message = reader.extract_message_exactly(&mut buffile).unwrap();
+        let message = reader.extract_message(&mut buffile).unwrap();
 
         // check that the return message matches the system message
         // assert!(message.is_none());
@@ -264,12 +264,12 @@ mod tests {
         // create a temporary file
         let sinkfile = NamedTempFile::new("test_messages.bin").unwrap();
 
-        // create a parser with a ticker
+        // create a reader with a ticker
         let tickers = HashSet::from(["A".to_string()]);
-        let mut parser = Parser::new(Version::V41, tickers);
-        parser.context.update_clock(0);
+        let mut reader = Reader::new(Version::V41, tickers);
+        reader.context.update_clock(0);
         let order = create_order_state("A", Side::Buy, 1000, 200);
-        parser.context.active_orders.insert(89402372340, order);
+        reader.context.active_orders.insert(89402372340, order);
 
         // add messages to the file
         let messages = vec![
@@ -281,8 +281,8 @@ mod tests {
         let mut buffile = BufFile::new(sinkfile.path()).unwrap();
 
         // extract the next message
-        // let message = parser.extract_message_exactly(&mut buffile).unwrap();
-        let message = parser.extract_message(&mut buffile).unwrap();
+        // let message = reader.extract_message_exactly(&mut buffile).unwrap();
+        let message = reader.extract_message(&mut buffile).unwrap();
 
         // check that the return message matches the system message
         // assert!(message.is_none());
