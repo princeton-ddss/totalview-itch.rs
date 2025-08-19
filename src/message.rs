@@ -1,9 +1,13 @@
 mod add_order;
+mod broken_trade;
 mod cancel_order;
+mod cross_trade;
 mod delete_order;
 mod execute_order;
+mod noii;
 mod replace_order;
 mod system_event;
+mod trade;
 
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Read, Result, Seek};
@@ -20,6 +24,10 @@ pub use cancel_order::CancelOrder;
 pub use delete_order::DeleteOrder;
 pub use execute_order::ExecuteOrder;
 pub use system_event::SystemEvent;
+pub use trade::Trade;
+pub use cross_trade::CrossTrade;
+pub use broken_trade::BrokenTrade;
+pub use noii::NetOrderImbalanceIndicator;
 
 pub(crate) use replace_order::read_replace_order;
 
@@ -30,6 +38,10 @@ pub enum Message {
     ExecuteOrder(ExecuteOrder),
     CancelOrder(CancelOrder),
     DeleteOrder(DeleteOrder),
+    Trade(Trade),
+    CrossTrade(CrossTrade),
+    BrokenTrade(BrokenTrade),
+    NetOrderImbalanceIndicator(NetOrderImbalanceIndicator),
 }
 
 #[derive(Debug, PartialEq, Display)]
@@ -119,6 +131,10 @@ fn read_refno<T: Read>(buffer: &mut T) -> Result<u64> {
     buffer.read_u64::<NetworkEndian>()
 }
 
+fn read_matchno<T: Read>(buffer: &mut T) -> Result<u64> {
+    buffer.read_u64::<NetworkEndian>()
+}
+
 fn read_printable<T: Read>(buffer: &mut T) -> Result<bool> {
     let printable = buffer.read_u8().map(char::from)?;
     Ok(printable == 'Y')
@@ -195,10 +211,10 @@ pub(crate) fn peek_kind<T: Peek>(buffer: &mut T) -> Result<char> {
     Ok(kind)
 }
 
-pub(crate) fn peek_ticker<T: Peek>(buffer: &mut T, version: &Version) -> Result<String> {
+pub(crate) fn peek_ticker<T: Peek>(buffer: &mut T, at: usize, version: &Version) -> Result<String> {
     let ahead = match version {
-        Version::V41 => 18,
-        Version::V50 => 24,
+        Version::V41 => at, // 18,
+        Version::V50 => at + 6 // 24,
     };
     let buf = buffer.peek(ahead, 8)?;
     match String::from_utf8(buf) {
@@ -235,8 +251,56 @@ pub struct OrderMessage {
     execution_price: Option<u32>,
 }
 
+
 pub trait IntoOrderMessage {
     fn into_order_message(self, date: String) -> OrderMessage;
+}
+
+// Trade messages provide execution details for *non-displayable order types*.
+// A trade message is transmitted each time a non-displayble order is executed in whole or in part. Therefore, it is possible to receive multiple trade messages for the same order. Trade messages should be included in volume and market statistics, but they should not be included in order book reconstruction as non-displayable orders do not impact the order book.
+#[derive(Debug, Getters, Serialize)]
+#[getset(get = "pub")]
+pub struct TradeMessage {
+    date: String,
+    nanoseconds: u64,
+    kind: char, // P = non-cross, Q = cross, B = broken
+    refno: u64,
+    side: Side, // The type of non-display order on the book being matched (always "B" effective 07/14/2014)
+    shares: u32,
+    ticker: String,
+    price: u32,
+    matchno: u64,
+    cross_price: u32,
+    cross_type: char,
+}
+
+pub trait IntoTradeMessage {
+    fn into_trade_message(self, date: String) -> TradeMessage;
+}
+
+// NOII (net order imbalance indicator) messages indicate the imbalance between buy and sell orders leading up to crosses.
+// For the opening cross, NOII messages are disseminated every 5 seconds starting two minutes before the start of market hours.
+// For the closing cross, NOII messages are disseninated every 5 seconds starting ten minutes before the end of market hours.
+//  NOII messages are also disseminated every 5-seconds during the quote only period for IPO, halt, and imbalance crosses, starting approximately 5 seconds after the Stock Trading Action message with "Q" or "R" action value.
+#[derive(Debug, Getters, Serialize)]
+#[getset(get = "pub")]
+pub struct NOIIMessage {
+    date: String,
+    nanoseconds: u64,
+    kind: char, // I
+    ticker: String,
+    paired_shares: u64, // total number of shares eligible to be matched at current reference price
+    imbalance_shares: u64, // number of shares not paired at current reference price
+    imbalance_direction: char, // B = buy, S = sell, N = none
+    far_price: u32,
+    near_price: u32,
+    ref_price: u32,
+    cross_type: char, // O = open, C = close, H = IPO and halted/paused securities
+    var_indicator: char, // See protocol
+}
+
+pub trait IntoNOIIMessage {
+    fn into_noii_message(self, date: String) -> NOIIMessage;
 }
 
 #[cfg(test)]

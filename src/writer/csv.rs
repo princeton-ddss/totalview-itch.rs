@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use csv::WriterBuilder;
 
-use crate::message::OrderMessage;
+use crate::message::{OrderMessage, TradeMessage, NOIIMessage};
 use crate::orderbook::OrderBookSnapshot;
 
 use super::Flush;
@@ -117,6 +117,64 @@ impl Flush for CSV {
 
             writer.flush()?;
         }
+
+        Ok(())
+    }
+
+    fn flush_trade_messages(&self, trade_messages: &[TradeMessage]) -> Result<(), Box<dyn Error>> {
+        let dirpath = self.output_dir.join("trade_messages");
+        if !dirpath.exists() {
+            create_dir(&dirpath)?;
+        }
+
+        let date = trade_messages[0].date().clone(); // Assume same date across all messages
+        let filename = format!("{}.csv", date);
+        let filepath = dirpath.join(filename);
+        let file_exists = filepath.exists();
+
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(filepath)?;
+
+        let mut writer = WriterBuilder::new()
+            .has_headers(!file_exists)
+            .from_writer(file);
+
+        for message in trade_messages {
+            writer.serialize(message)?;
+        }
+
+        writer.flush()?;
+
+        Ok(())
+    }
+
+    fn flush_noii_messages(&self, noii_messages: &[NOIIMessage]) -> Result<(), Box<dyn Error>> {
+        let dirpath = self.output_dir.join("noii_messages");
+        if !dirpath.exists() {
+            create_dir(&dirpath)?;
+        }
+
+        let date = noii_messages[0].date().clone(); // Assume same date across all messages
+        let filename = format!("{}.csv", date);
+        let filepath = dirpath.join(filename);
+        let file_exists = filepath.exists();
+
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(filepath)?;
+
+        let mut writer = WriterBuilder::new()
+            .has_headers(!file_exists)
+            .from_writer(file);
+
+        for message in noii_messages {
+            writer.serialize(message)?;
+        }
+
+        writer.flush()?;
 
         Ok(())
     }

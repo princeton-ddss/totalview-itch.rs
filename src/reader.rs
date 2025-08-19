@@ -5,7 +5,8 @@ use crate::buffer::Peek;
 use crate::constants::EVERY_TICKER;
 use crate::message::{peek_kind, peek_refno, peek_ticker, read_kind, read_seconds, read_size};
 use crate::message::{
-    read_replace_order, AddOrder, CancelOrder, DeleteOrder, ExecuteOrder, SystemEvent,
+    read_replace_order, AddOrder, BrokenTrade, CancelOrder, CrossTrade, DeleteOrder, ExecuteOrder,
+    NetOrderImbalanceIndicator, SystemEvent, Trade,
 };
 use crate::message::{Context, Message, ReadMessage, Version};
 
@@ -35,7 +36,15 @@ impl Reader {
         }
 
         loop {
-            let size = read_size(buffer)?;
+            let size = match read_size(buffer) {
+                Ok(s) => s,
+                Err(_) => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        "File stream is complete.",
+                    ))
+                }
+            };
             let kind = peek_kind(buffer)?;
 
             if kind == 'T' {
@@ -46,12 +55,20 @@ impl Reader {
             }
 
             let msg = match kind {
+                // system event message
                 'S' => self.parse_system_event(buffer)?,
+                // order messages
                 'A' | 'F' => self.parse_add_order(buffer)?,
                 'E' | 'C' => self.parse_execute_order(buffer)?,
                 'X' => self.parse_cancel_order(buffer)?,
                 'D' => self.parse_delete_order(buffer)?,
                 'U' => self.parse_replace_order(buffer)?,
+                // trade messages
+                'P' => self.parse_trade(buffer)?,
+                'Q' => self.parse_cross_trade(buffer)?,
+                'B' => self.parse_broken_trade(buffer)?,
+                // net order imbalance message
+                'I' => self.parse_noii(buffer)?,
                 _ => None,
             };
 
@@ -88,7 +105,7 @@ impl Reader {
         let should_parse = if self.tickers.contains(EVERY_TICKER) {
             true
         } else {
-            let ticker = peek_ticker(buffer, &self.version)?;
+            let ticker = peek_ticker(buffer, 18, &self.version)?;
             self.tickers.contains(&ticker)
         };
 
@@ -151,6 +168,58 @@ impl Reader {
                 read_replace_order(buffer, &self.version, &mut self.context)?;
             self.buf.push_back(Message::AddOrder(add_order)); // Return in next call
             Ok(Some(Message::DeleteOrder(delete_order)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_trade<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Peek,
+    {
+        let ticker = peek_ticker(buffer, 18, &self.version)?;
+
+        if self.tickers.contains(&ticker) || self.tickers.contains(EVERY_TICKER) {
+            let message = Trade::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::Trade(message)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_cross_trade<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Peek,
+    {
+        let ticker = peek_ticker(buffer, 13, &self.version)?;
+
+        if self.tickers.contains(&ticker) || self.tickers.contains(EVERY_TICKER) {
+            let message = CrossTrade::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::CrossTrade(message)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_broken_trade<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Peek,
+    {
+        // Broken trades don't have tickers, so we always parse them
+        let message = BrokenTrade::read(buffer, &self.version, &mut self.context)?;
+        Ok(Some(Message::BrokenTrade(message)))
+    }
+
+    fn parse_noii<T>(&mut self, buffer: &mut T) -> Result<Option<Message>>
+    where
+        T: Read + Seek + Peek,
+    {
+        let ticker = peek_ticker(buffer, 22, &self.version)?;
+
+        if self.tickers.contains(&ticker) || self.tickers.contains(EVERY_TICKER) {
+            let message =
+                NetOrderImbalanceIndicator::read(buffer, &self.version, &mut self.context)?;
+            Ok(Some(Message::NetOrderImbalanceIndicator(message)))
         } else {
             Ok(None)
         }

@@ -1,7 +1,8 @@
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use lobsters::{
-    message::IntoOrderMessage, Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
+    message::{IntoNOIIMessage, IntoOrderMessage, IntoTradeMessage},
+    Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
 };
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -38,7 +39,6 @@ struct Cli {
         help = "The size of internal buffer used for writing data."
     )]
     capacity: usize,
-
 }
 
 fn parse_filename<P: AsRef<Path>>(path: P) -> Option<(String, Version)> {
@@ -124,7 +124,7 @@ fn main() {
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
                             order_book.add_order(*data.side(), *data.price(), *data.shares());
-                            
+
                             // Create and write snapshot
                             let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth); // Top 10 levels
                             writer.write_snapshot(snapshot).unwrap();
@@ -186,6 +186,22 @@ fn main() {
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
                     }
+                    Message::Trade(data) => {
+                        let trade_message = data.into_trade_message(date.clone());
+                        writer.write_trade_message(trade_message).unwrap();
+                    }
+                    Message::CrossTrade(data) => {
+                        let trade_message = data.into_trade_message(date.clone());
+                        writer.write_trade_message(trade_message).unwrap();
+                    }
+                    Message::BrokenTrade(data) => {
+                        let trade_message = data.into_trade_message(date.clone());
+                        writer.write_trade_message(trade_message).unwrap();
+                    }
+                    Message::NetOrderImbalanceIndicator(data) => {
+                        let noii_message = data.into_noii_message(date.clone());
+                        writer.write_noii_message(noii_message).unwrap();
+                    }
                     _ => {}
                 }
             }
@@ -195,6 +211,7 @@ fn main() {
                 {
                     break; // End of file reached
                 } else {
+                    eprintln!("An error occurred: {}.", e);
                     return; // Err(e); // Actual error
                 }
             }
