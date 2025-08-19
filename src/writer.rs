@@ -3,7 +3,7 @@ mod csv;
 use std::error::Error;
 
 use crate::message::OrderMessage;
-use crate::order_book::OrderBookSnapshot;
+use crate::orderbook::OrderBookSnapshot;
 
 pub use csv::CSV;
 

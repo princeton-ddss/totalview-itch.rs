@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use csv::WriterBuilder;
 
 use crate::message::OrderMessage;
-use crate::order_book::OrderBookSnapshot;
+use crate::orderbook::OrderBookSnapshot;
 
 use super::Flush;
 
