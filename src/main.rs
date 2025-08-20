@@ -4,14 +4,113 @@ use lobsters::{
     message::{IntoNOIIMessage, IntoOrderMessage, IntoTradeMessage},
     Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
 };
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
 use std::io::{ErrorKind, Seek};
 use std::path::Path;
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 
 // TODO: Print error to std:err
 // TODO: handle panics
+
+struct PerformanceMetrics {
+    file_size: u64,
+    duration: DurationMetrics,
+    messages: MessageMetrics,
+    memory: MemoryMetrics,
+}
+
+impl PerformanceMetrics {
+    fn new(file_size: u64) -> Self {
+        Self {
+            file_size: file_size,
+            duration: DurationMetrics::new(),
+            messages: MessageMetrics::new(),
+            memory: MemoryMetrics::new(),
+        }
+    }
+
+    fn summarize(&self) {
+        println!("📊 Performance Report");
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!("File size:      {} MB", self.file_size / 1_000_000);
+        println!("Total time:     {:.2}s", self.duration.total.as_secs_f64());
+        println!(
+            "Throughput:     {:.1} MB/s",
+            (self.file_size as f64) / 1_000_000.0 / self.duration.total.as_secs_f64()
+        );
+
+        println!("\n🔍 Time Breakdown:");
+        let total_ms = self.duration.total.as_millis() as f64;
+        println!(
+            "  Parsing:      {:.1}ms ({:.1}%)",
+            self.duration.parsing.as_millis(),
+            self.duration.parsing.as_millis() as f64 / total_ms * 100.0
+        );
+        println!(
+            "  Order books:  {:.1}ms ({:.1}%)",
+            self.duration.orderbook.as_millis(),
+            self.duration.orderbook.as_millis() as f64 / total_ms * 100.0
+        );
+        println!(
+            "  Serialization:  {:.1}ms ({:.1}%)",
+            self.duration.serialization.as_millis(),
+            self.duration.serialization.as_millis() as f64 / total_ms * 100.0
+        );
+    }
+}
+
+struct DurationMetrics {
+    total: Duration,
+    parsing: Duration,
+    serialization: Duration,
+    orderbook: Duration,
+}
+
+impl DurationMetrics {
+    fn new() -> Self {
+        Self {
+            total: Duration::new(0, 0),
+            parsing: Duration::new(0, 0),
+            serialization: Duration::new(0, 0),
+            orderbook: Duration::new(0, 0),
+        }
+    }
+}
+
+struct MessageMetrics {
+    total: u64,
+    orders: u64,
+    system: u64,
+    trades: u64,
+    noii: u64,
+}
+
+impl MessageMetrics {
+    fn new() -> Self {
+        Self {
+            total: 0,
+            orders: 0,
+            system: 0,
+            trades: 0,
+            noii: 0,
+        }
+    }
+}
+
+struct MemoryMetrics {
+    max: u64,
+    min: u64,
+}
+
+impl MemoryMetrics {
+    fn new() -> Self {
+        Self { max: 0, min: 0 }
+    }
+}
 
 #[derive(Parser)]
 struct Cli {
@@ -75,6 +174,9 @@ fn parse_filename<P: AsRef<Path>>(path: P) -> Option<(String, Version)> {
 }
 
 fn main() {
+    //  Start timer
+    let start = Instant::now();
+
     // Parse args and environment variables
     let args = Cli::parse();
     let tickers: HashSet<String> = args.tickers.split(',').map(|s| s.to_string()).collect();
@@ -89,7 +191,6 @@ fn main() {
     let mut writer = Writer::new(backend, args.capacity);
 
     // Set up progress bar
-    let mut messages_read = 0;
     let filesize = fs::metadata(&args.path).unwrap().len();
     let pb = ProgressBar::new(filesize);
     pb.set_style(
@@ -99,6 +200,9 @@ fn main() {
             ).unwrap()
             .progress_chars("#>-"),
     );
+
+    // Set up metrics
+    let mut metrics = PerformanceMetrics::new(filesize);
 
     // Create order books for each ticker
     let mut order_books: HashMap<String, OrderBook> = HashMap::new();
@@ -114,93 +218,138 @@ fn main() {
         let current_pos = buffer.stream_position().unwrap();
         pb.set_position(current_pos);
 
+        let parse_start = Instant::now();
         match reader.extract_message(&mut buffer) {
             Ok(msg) => {
-                messages_read += 1;
-                pb.set_message(format!("{} messages", messages_read));
+                metrics.messages.total += 1;
+                metrics.duration.parsing += parse_start.elapsed();
+                pb.set_message(format!("{} messages", &metrics.messages.total));
 
                 match msg {
                     Message::AddOrder(data) => {
+                        metrics.messages.orders += 1;
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            let order_book_start = Instant::now();
                             order_book.add_order(*data.side(), *data.price(), *data.shares());
+                            metrics.duration.orderbook += order_book_start.elapsed();
 
                             // Create and write snapshot
+                            let write_start = Instant::now();
                             let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth); // Top 10 levels
                             writer.write_snapshot(snapshot).unwrap();
+                            metrics.duration.orderbook += write_start.elapsed();
                         }
 
+                        let write_start = Instant::now();
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     Message::CancelOrder(data) => {
+                        metrics.messages.orders += 1;
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            let order_book_start = Instant::now();
                             if let Err(e) =
                                 order_book.remove_order(*data.side(), *data.price(), *data.shares())
                             {
+                                metrics.duration.orderbook += order_book_start.elapsed();
                                 eprintln!("Warning: Failed to cancel order: {}", e);
                             } else {
+                                metrics.duration.orderbook += order_book_start.elapsed();
                                 // Create and write snapshot only if update succeeded
+                                let write_start = Instant::now();
                                 let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
                                 writer.write_snapshot(snapshot).unwrap();
+                                metrics.duration.serialization += write_start.elapsed();
                             }
                         }
 
+                        let write_start = Instant::now();
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     Message::DeleteOrder(data) => {
+                        metrics.messages.orders += 1;
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            let order_book_start = Instant::now();
                             if let Err(e) =
                                 order_book.remove_order(*data.side(), *data.price(), *data.shares())
                             {
+                                metrics.duration.orderbook += order_book_start.elapsed();
                                 eprintln!("Warning: Failed to delete order: {}", e);
                             } else {
+                                metrics.duration.orderbook += order_book_start.elapsed();
                                 // Create and write snapshot only if update succeeded
+                                let write_start = Instant::now();
                                 let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
                                 writer.write_snapshot(snapshot).unwrap();
+                                metrics.duration.serialization += write_start.elapsed();
                             }
                         }
 
+                        let write_start = Instant::now();
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     Message::ExecuteOrder(data) => {
+                        metrics.messages.orders += 1;
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                            let order_book_start = Instant::now();
                             if let Err(e) = order_book.execute_order(
                                 *data.side(),
                                 *data.price(),
                                 *data.shares(),
                             ) {
+                                metrics.duration.orderbook += order_book_start.elapsed();
                                 eprintln!("Warning: Failed to execute order: {}", e);
                             } else {
+                                metrics.duration.orderbook += order_book_start.elapsed();
                                 // Create and write snapshot only if update succeeded
+                                let write_start = Instant::now();
                                 let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
                                 writer.write_snapshot(snapshot).unwrap();
+                                metrics.duration.serialization += write_start.elapsed();
                             }
                         }
 
+                        let write_start = Instant::now();
                         let order_message = data.into_order_message(date.clone());
                         writer.write_order_message(order_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     Message::Trade(data) => {
+                        metrics.messages.trades += 1;
+                        let write_start = Instant::now();
                         let trade_message = data.into_trade_message(date.clone());
                         writer.write_trade_message(trade_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     Message::CrossTrade(data) => {
+                        metrics.messages.trades += 1;
+                        let write_start = Instant::now();
                         let trade_message = data.into_trade_message(date.clone());
                         writer.write_trade_message(trade_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     Message::BrokenTrade(data) => {
+                        metrics.messages.trades += 1;
+                        let write_start = Instant::now();
                         let trade_message = data.into_trade_message(date.clone());
                         writer.write_trade_message(trade_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     Message::NetOrderImbalanceIndicator(data) => {
+                        metrics.messages.noii += 1;
+                        let write_start = Instant::now();
                         let noii_message = data.into_noii_message(date.clone());
                         writer.write_noii_message(noii_message).unwrap();
+                        metrics.duration.serialization += write_start.elapsed();
                     }
                     _ => {}
                 }
@@ -218,7 +367,9 @@ fn main() {
         }
     }
 
-    pb.finish_with_message(format!("✅ Processed {} messages", messages_read));
+    metrics.duration.total += start.elapsed();
+    pb.finish_with_message(format!("✅ Processed {} messages", &metrics.messages.total));
+    metrics.summarize();
 }
 
 #[cfg(test)]
