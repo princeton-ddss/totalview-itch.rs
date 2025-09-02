@@ -244,7 +244,7 @@ mod tests {
         assert_eq!(*book.bids().get(&1000).unwrap(), 50);
 
         book.remove_order(Side::Buy, 1000, 50).unwrap();
-        assert!(!book.bids().get(&1000).is_some());
+        assert!(book.bids().get(&1000).is_none());
 
         book.add_order(Side::Sell, 1100, 100);
         assert!(book.asks().get(&1100).is_some());
@@ -255,7 +255,7 @@ mod tests {
         assert_eq!(*book.asks().get(&1100).unwrap(), 50);
 
         book.remove_order(Side::Sell, 1100, 50).unwrap();
-        assert!(!book.asks().get(&1100).is_some());
+        assert!(book.asks().get(&1100).is_none());
     }
 
     #[test]

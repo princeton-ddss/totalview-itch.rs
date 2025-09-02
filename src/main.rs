@@ -20,16 +20,16 @@ struct PerformanceMetrics {
     file_size: u64,
     duration: DurationMetrics,
     messages: MessageMetrics,
-    memory: MemoryMetrics,
+    // memory: MemoryMetrics,
 }
 
 impl PerformanceMetrics {
     fn new(file_size: u64) -> Self {
         Self {
-            file_size: file_size,
+            file_size,
             duration: DurationMetrics::new(),
             messages: MessageMetrics::new(),
-            memory: MemoryMetrics::new(),
+            // memory: MemoryMetrics::new(),
         }
     }
 
@@ -84,7 +84,7 @@ impl DurationMetrics {
 struct MessageMetrics {
     total: u64,
     orders: u64,
-    system: u64,
+    // system: u64,
     trades: u64,
     noii: u64,
 }
@@ -94,23 +94,23 @@ impl MessageMetrics {
         Self {
             total: 0,
             orders: 0,
-            system: 0,
+            // system: 0,
             trades: 0,
             noii: 0,
         }
     }
 }
 
-struct MemoryMetrics {
-    max: u64,
-    min: u64,
-}
+// struct MemoryMetrics {
+//     max: u64,
+//     min: u64,
+// }
 
-impl MemoryMetrics {
-    fn new() -> Self {
-        Self { max: 0, min: 0 }
-    }
-}
+// impl MemoryMetrics {
+//     fn new() -> Self {
+//         Self { max: 0, min: 0 }
+//     }
+// }
 
 #[derive(Parser)]
 struct Cli {

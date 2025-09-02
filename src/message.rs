@@ -338,12 +338,12 @@ mod tests {
     #[test]
     fn read_printable_is_true() {
         let mut buffer = "Y".as_bytes();
-        assert_eq!(read_printable(&mut buffer).unwrap(), true);
+        assert!(read_printable(&mut buffer).unwrap());
     }
     #[test]
     fn read_printable_is_false() {
         let mut buffer = "N".as_bytes();
-        assert_eq!(read_printable(&mut buffer).unwrap(), false);
+        assert!(!read_printable(&mut buffer).unwrap());
     }
 
     #[test]
@@ -374,7 +374,7 @@ mod tests {
     #[test]
     fn missing_order() {
         let context = Context::new();
-        assert_eq!(context.has_order(1), false);
+        assert!(!context.has_order(1));
     }
 
     #[test]
@@ -387,7 +387,7 @@ mod tests {
             shares: 0,
         };
         context.active_orders.insert(1, order);
-        assert_eq!(context.has_order(1), true);
+        assert!(context.has_order(1));
     }
 }
 

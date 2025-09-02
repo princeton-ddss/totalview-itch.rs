@@ -310,7 +310,7 @@ mod tests {
         // add messages to the file
         let messages = vec![
             add_order_v41(0, 89402372340, Side::Buy, 100, "X", 1000),
-            add_order_v41(0, 09234509829, Side::Buy, 100, "A", 1000),
+            add_order_v41(0, 9234509829, Side::Buy, 100, "A", 1000),
         ];
         let data = create_message_sequence(messages);
         sinkfile.write_binary(&data.into_inner()).unwrap();

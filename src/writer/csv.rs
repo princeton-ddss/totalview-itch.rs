@@ -67,7 +67,7 @@ impl Flush for CSV {
         for snapshot in snapshots {
             ticker_snapshots
                 .entry(snapshot.ticker.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(snapshot);
         }
 
