@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use csv::WriterBuilder;
 
-use crate::message::{OrderMessage, TradeMessage, NOIIMessage};
+use crate::message::{NOIIMessage, OrderMessage, TradeMessage};
 use crate::orderbook::OrderBookSnapshot;
 
 use super::Flush;
@@ -61,9 +61,9 @@ impl Flush for CSV {
         }
 
         // Group snapshots by ticker
-        let mut ticker_snapshots: std::collections::HashMap<String, Vec<&OrderBookSnapshot>> = 
+        let mut ticker_snapshots: std::collections::HashMap<String, Vec<&OrderBookSnapshot>> =
             std::collections::HashMap::new();
-        
+
         for snapshot in snapshots {
             ticker_snapshots
                 .entry(snapshot.ticker.clone())
@@ -90,19 +90,19 @@ impl Flush for CSV {
             if !file_exists && !ticker_snaps.is_empty() {
                 let levels_count = ticker_snaps[0].levels.len() / 4; // levels per side
                 let mut headers = vec!["ticker".to_string(), "timestamp".to_string()];
-                
+
                 // Add bid headers
                 for i in 1..=levels_count {
                     headers.push(format!("bid_price_{}", i));
                     headers.push(format!("bid_size_{}", i));
                 }
-                
-                // Add ask headers  
+
+                // Add ask headers
                 for i in 1..=levels_count {
                     headers.push(format!("ask_price_{}", i));
                     headers.push(format!("ask_size_{}", i));
                 }
-                
+
                 writer.write_record(&headers)?;
             }
 

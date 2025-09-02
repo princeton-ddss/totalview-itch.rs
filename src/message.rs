@@ -20,14 +20,14 @@ use strum_macros::Display;
 use crate::buffer::Peek;
 
 pub use add_order::AddOrder;
+pub use broken_trade::BrokenTrade;
 pub use cancel_order::CancelOrder;
+pub use cross_trade::CrossTrade;
 pub use delete_order::DeleteOrder;
 pub use execute_order::ExecuteOrder;
+pub use noii::NetOrderImbalanceIndicator;
 pub use system_event::SystemEvent;
 pub use trade::Trade;
-pub use cross_trade::CrossTrade;
-pub use broken_trade::BrokenTrade;
-pub use noii::NetOrderImbalanceIndicator;
 
 pub(crate) use replace_order::read_replace_order;
 
@@ -213,8 +213,8 @@ pub(crate) fn peek_kind<T: Peek>(buffer: &mut T) -> Result<char> {
 
 pub(crate) fn peek_ticker<T: Peek>(buffer: &mut T, at: usize, version: &Version) -> Result<String> {
     let ahead = match version {
-        Version::V41 => at, // 18,
-        Version::V50 => at + 6 // 24,
+        Version::V41 => at,     // 18,
+        Version::V50 => at + 6, // 24,
     };
     let buf = buffer.peek(ahead, 8)?;
     match String::from_utf8(buf) {
@@ -250,7 +250,6 @@ pub struct OrderMessage {
     printable: Option<bool>,
     execution_price: Option<u32>,
 }
-
 
 pub trait IntoOrderMessage {
     fn into_order_message(self, date: String) -> OrderMessage;
@@ -295,7 +294,7 @@ pub struct NOIIMessage {
     far_price: u32,
     near_price: u32,
     ref_price: u32,
-    cross_type: char, // O = open, C = close, H = IPO and halted/paused securities
+    cross_type: char,    // O = open, C = close, H = IPO and halted/paused securities
     var_indicator: char, // See protocol
 }
 

@@ -1,12 +1,10 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
-use getset::Getters;
 use byteorder::{NetworkEndian, ReadBytesExt};
+use getset::Getters;
 
-use super::{
-    read_kind, read_matchno, read_nanoseconds, read_price, read_ticker,
-};
-use super::{Context, ReadMessage, Version, Side};
+use super::{read_kind, read_matchno, read_nanoseconds, read_price, read_ticker};
+use super::{Context, ReadMessage, Side, Version};
 use super::{IntoTradeMessage, TradeMessage};
 
 #[derive(Debug, Getters)]
@@ -55,7 +53,7 @@ impl IntoTradeMessage for CrossTrade {
             date,
             nanoseconds: self.nanoseconds,
             kind: self.kind,
-            refno: 0, // Cross trades don't have reference numbers
+            refno: 0,        // Cross trades don't have reference numbers
             side: Side::Buy, // Cross trades don't have a specific side
             shares: self.shares as u32,
             ticker: self.ticker,

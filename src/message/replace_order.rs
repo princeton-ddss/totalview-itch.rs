@@ -83,7 +83,8 @@ mod tests {
             },
         );
 
-        let (delete_order, add_order) = read_replace_order(&mut data, &Version::V50, &mut context).unwrap();
+        let (delete_order, add_order) =
+            read_replace_order(&mut data, &Version::V50, &mut context).unwrap();
 
         // Check delete order
         assert_eq!(*delete_order.kind(), 'D');
@@ -131,7 +132,8 @@ mod tests {
             },
         );
 
-        let (delete_order, add_order) = read_replace_order(&mut data, &Version::V41, &mut context).unwrap();
+        let (delete_order, add_order) =
+            read_replace_order(&mut data, &Version::V41, &mut context).unwrap();
 
         // Check delete order
         assert_eq!(*delete_order.kind(), 'D');
@@ -189,7 +191,8 @@ mod tests {
             },
         );
 
-        let (delete_order, add_order) = read_replace_order(&mut data, &Version::V41, &mut context).unwrap();
+        let (delete_order, add_order) =
+            read_replace_order(&mut data, &Version::V41, &mut context).unwrap();
 
         // Both orders should have same ticker and side as original
         assert_eq!(*delete_order.ticker(), "ROKU");
@@ -219,7 +222,8 @@ mod tests {
             },
         );
 
-        let (delete_order, add_order) = read_replace_order(&mut data, &Version::V50, &mut context).unwrap();
+        let (delete_order, add_order) =
+            read_replace_order(&mut data, &Version::V50, &mut context).unwrap();
 
         // Same refno but different attributes
         assert_eq!(*delete_order.refno(), 66666);
@@ -252,7 +256,8 @@ mod tests {
             },
         );
 
-        let (delete_order, add_order) = read_replace_order(&mut data, &Version::V41, &mut context).unwrap();
+        let (delete_order, add_order) =
+            read_replace_order(&mut data, &Version::V41, &mut context).unwrap();
 
         assert_eq!(*delete_order.from_replace(), Some(true));
         assert_eq!(*add_order.from_replace(), Some(true));

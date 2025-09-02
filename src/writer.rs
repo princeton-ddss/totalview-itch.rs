@@ -2,7 +2,7 @@ mod csv;
 
 use std::error::Error;
 
-use crate::message::{OrderMessage, TradeMessage, NOIIMessage};
+use crate::message::{NOIIMessage, OrderMessage, TradeMessage};
 use crate::orderbook::OrderBookSnapshot;
 
 pub use csv::CSV;
@@ -49,10 +49,7 @@ impl<T: Flush> Writer<T> {
         Ok(())
     }
 
-    pub fn write_snapshot(
-        &mut self,
-        snapshot: OrderBookSnapshot,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn write_snapshot(&mut self, snapshot: OrderBookSnapshot) -> Result<(), Box<dyn Error>> {
         self.snapshots.push(snapshot);
 
         if self.snapshots.len() >= self.buffer_size {
@@ -77,10 +74,7 @@ impl<T: Flush> Writer<T> {
         Ok(())
     }
 
-    pub fn write_noii_message(
-        &mut self,
-        noii_message: NOIIMessage,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn write_noii_message(&mut self, noii_message: NOIIMessage) -> Result<(), Box<dyn Error>> {
         self.noii_messages.push(noii_message);
 
         if self.noii_messages.len() >= self.buffer_size {
@@ -100,21 +94,21 @@ impl<T: Flush> Drop for Writer<T> {
                 Ok(_) => self.order_messages.clear(),
             };
         }
-        
+
         if !self.snapshots.is_empty() {
             match self.backend.flush_snapshots(&self.snapshots) {
                 Err(e) => eprintln!("Failed to flush residual snapshots: {}", e),
                 Ok(_) => self.snapshots.clear(),
             };
         }
-        
+
         if !self.trade_messages.is_empty() {
             match self.backend.flush_trade_messages(&self.trade_messages) {
                 Err(e) => eprintln!("Failed to flush residual trade messages: {}", e),
                 Ok(_) => self.trade_messages.clear(),
             };
         }
-        
+
         if !self.noii_messages.is_empty() {
             match self.backend.flush_noii_messages(&self.noii_messages) {
                 Err(e) => eprintln!("Failed to flush residual noii messages: {}", e),

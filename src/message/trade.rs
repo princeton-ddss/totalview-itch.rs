@@ -64,7 +64,7 @@ impl IntoTradeMessage for Trade {
             ticker: self.ticker,
             price: self.price,
             matchno: self.matchno,
-            cross_price: 0, // Not applicable for regular trades
+            cross_price: 0,  // Not applicable for regular trades
             cross_type: ' ', // Not applicable for regular trades
         }
     }

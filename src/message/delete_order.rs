@@ -106,10 +106,9 @@ mod tests {
         let mut data = delete_order_v50(2000, 98765);
         let mut context = Context::new();
         context.update_clock(0);
-        context.active_orders.insert(
-            98765,
-            create_order_state("NVDA", Side::Sell, 45000, 150),
-        );
+        context
+            .active_orders
+            .insert(98765, create_order_state("NVDA", Side::Sell, 45000, 150));
 
         let message = DeleteOrder::read(&mut data, &Version::V50, &mut context).unwrap();
 
