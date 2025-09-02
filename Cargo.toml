@@ -2,22 +2,64 @@
 name = "lobsters"
 version = "0.1.0"
 edition = "2021"
+authors = ["Sangyoon Park (sangyoonpark@princeton.edu) and Colin Swaney (colinswaney@princeton.edu)"]
+description = "A 🔥fast🔥 parser for Historical TotalView-ITCH data"
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/princeton-ddss/lobste.rs"
+repository = "https://github.com/princeton-ddss/lobste.rs"
+keywords = ["finance", "market microstructure", "nasdaq", "high-frequency trading"]
+categories = ["finance", "parsing", "command-line-utilities"]
+rust-version = "1.70.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "lobsters"
+path = "src/main.rs"
+
+[lib]
+name = "lobsters"
+path = "src/lib.rs"
 
 [dependencies]
-arrow-array = "50.0.0"
+arrow-array = "^56.0"
 assert_fs = "1.1.3"
-byteorder = "1.5.0"
-clap = { version = "4.5.45", features = ["derive"] }
-csv = "1.3.0"
-getset = "0.1.5"
-indicatif = "0.18.0"
-parquet = "50.0.0"
+byteorder = "1.3.0"
+clap = { version = "^4.5", features = ["derive"] }
+csv = "~1.3.0"
+getset = "^0.1"
+indicatif = "^0.18"
+parquet = "^56.0"
 serde = { version="1.0.195", features=["derive"] }
-strum = "0.25.0"
-strum_macros = "0.25.3"
+strum = "0.27.0"
+strum_macros = "0.27.0"
 
 [dev-dependencies]
 intx = "0.1.0"
 assert_fs = "1.1.3"
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+tempfile = "3.8"
+
+[profile.release]
+# Optimize for speed and size
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.bench]
+# Profile for benchmarking
+inherits = "release"
+debug = true
+
+[profile.dev]
+# Faster compilation for development
+opt-level = 0
+debug = true
+incremental = true
+
+[[bench]]
+name = "parsing_bench"
+harness = false
+path = "benches/parsing_bench.rs"
