@@ -21,7 +21,6 @@ bench = "bench --all-features"
 flamegraph = "flamegraph --bin=lobsters"
 
 # Security and quality
-audit = "audit"
 outdated = "outdated --workspace"
 
 [env]
