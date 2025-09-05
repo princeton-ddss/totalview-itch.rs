@@ -82,3 +82,190 @@ impl IntoOrderMessage for ExecuteOrder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::message::test_helpers::message_builders::*;
+    use crate::message::{OrderState, Side};
+
+    #[test]
+    fn returns_message_and_updates_shares_v50() {
+        let mut data = execute_order_v50(3000, 55555, 50);
+        let mut context = Context::new();
+        context.update_clock(0);
+        context.active_orders.insert(
+            55555,
+            OrderState {
+                ticker: "INTC".to_string(),
+                side: Side::Buy,
+                price: 5500,
+                shares: 200,
+            },
+        );
+
+        let message = ExecuteOrder::read(&mut data, &Version::V50, &mut context).unwrap();
+
+        assert_eq!(*message.kind(), 'E');
+        assert_eq!(*message.nanoseconds(), 3000);
+        assert_eq!(*message.refno(), 55555);
+        assert_eq!(*message.ticker(), "INTC");
+        assert_eq!(*message.side(), Side::Buy);
+        assert_eq!(*message.price(), 5500);
+        assert_eq!(*message.shares(), 50);
+        assert_eq!(*message.printable(), None);
+        assert_eq!(*message.execution_price(), None);
+
+        let order = &context.active_orders[&55555];
+        assert_eq!(order.shares, 150); // 200 - 50
+    }
+
+    #[test]
+    fn returns_message_and_updates_shares_v41() {
+        let mut data = execute_order_v41(4500, 33333, 75);
+        let mut context = Context::new();
+        context.update_clock(10);
+        context.active_orders.insert(
+            33333,
+            OrderState {
+                ticker: "ORCL".to_string(),
+                side: Side::Sell,
+                price: 8200,
+                shares: 300,
+            },
+        );
+
+        let message = ExecuteOrder::read(&mut data, &Version::V41, &mut context).unwrap();
+
+        assert_eq!(*message.kind(), 'E');
+        assert_eq!(*message.nanoseconds(), 10_000_004_500);
+        assert_eq!(*message.refno(), 33333);
+        assert_eq!(*message.ticker(), "ORCL");
+        assert_eq!(*message.side(), Side::Sell);
+        assert_eq!(*message.price(), 8200);
+        assert_eq!(*message.shares(), 75);
+        assert_eq!(*message.printable(), None);
+        assert_eq!(*message.execution_price(), None);
+
+        let order = &context.active_orders[&33333];
+        assert_eq!(order.shares, 225); // 300 - 75
+    }
+
+    #[test]
+    fn handles_execute_with_price_message() {
+        let mut data = execute_order_with_price_v41(6000, 77777, 100, true, 15500);
+        let mut context = Context::new();
+        context.update_clock(15);
+        context.active_orders.insert(
+            77777,
+            OrderState {
+                ticker: "NFLX".to_string(),
+                side: Side::Buy,
+                price: 15000,
+                shares: 250,
+            },
+        );
+
+        let message = ExecuteOrder::read(&mut data, &Version::V41, &mut context).unwrap();
+
+        assert_eq!(*message.kind(), 'C');
+        assert_eq!(*message.nanoseconds(), 15_000_006_000);
+        assert_eq!(*message.refno(), 77777);
+        assert_eq!(*message.ticker(), "NFLX");
+        assert_eq!(*message.side(), Side::Buy);
+        assert_eq!(*message.price(), 15000);
+        assert_eq!(*message.shares(), 100);
+        assert_eq!(*message.printable(), Some(true));
+        assert_eq!(*message.execution_price(), Some(15500));
+
+        let order = &context.active_orders[&77777];
+        assert_eq!(order.shares, 150); // 250 - 100
+    }
+
+    #[test]
+    fn handles_non_printable_execute_with_price() {
+        let mut data = execute_order_with_price_v41(7000, 88888, 25, false, 22500);
+        let mut context = Context::new();
+        context.update_clock(20);
+        context.active_orders.insert(
+            88888,
+            OrderState {
+                ticker: "UBER".to_string(),
+                side: Side::Sell,
+                price: 22000,
+                shares: 100,
+            },
+        );
+
+        let message = ExecuteOrder::read(&mut data, &Version::V41, &mut context).unwrap();
+
+        assert_eq!(*message.kind(), 'C');
+        assert_eq!(*message.printable(), Some(false));
+        assert_eq!(*message.execution_price(), Some(22500));
+
+        let order = &context.active_orders[&88888];
+        assert_eq!(order.shares, 75); // 100 - 25
+    }
+
+    #[test]
+    #[should_panic(expected = "Order not found")]
+    fn panics_when_order_not_found() {
+        let mut data = execute_order_v50(1000, 99999, 50);
+        let mut context = Context::new();
+        context.update_clock(0);
+
+        ExecuteOrder::read(&mut data, &Version::V50, &mut context).unwrap();
+    }
+
+    #[test]
+    fn into_order_message_conversion() {
+        let execute_order = ExecuteOrder {
+            nanoseconds: 8000,
+            kind: 'C',
+            ticker: "SNAP".to_string(),
+            side: Side::Buy,
+            price: 1200,
+            shares: 40,
+            refno: 66666,
+            printable: Some(true),
+            execution_price: Some(1250),
+        };
+
+        let order_message = execute_order.into_order_message("2024-03-15".to_string());
+
+        assert_eq!(*order_message.date(), "2024-03-15");
+        assert_eq!(order_message.nanoseconds, 8000);
+        assert_eq!(order_message.kind, 'C');
+        assert_eq!(order_message.ticker, "SNAP");
+        assert_eq!(order_message.side, Side::Buy);
+        assert_eq!(order_message.price, 1200);
+        assert_eq!(order_message.shares, 40);
+        assert_eq!(order_message.refno, 66666);
+        assert_eq!(order_message.from_replace, None);
+        assert_eq!(order_message.mpid, None);
+        assert_eq!(order_message.printable, Some(true));
+        assert_eq!(order_message.execution_price, Some(1250));
+    }
+
+    #[test]
+    fn reduces_order_shares_correctly() {
+        let mut data = execute_order_v50(5000, 12321, 175);
+        let mut context = Context::new();
+        context.update_clock(0);
+        context.active_orders.insert(
+            12321,
+            OrderState {
+                ticker: "SPOT".to_string(),
+                side: Side::Buy,
+                price: 18000,
+                shares: 400,
+            },
+        );
+
+        assert_eq!(context.active_orders[&12321].shares, 400);
+
+        let _message = ExecuteOrder::read(&mut data, &Version::V50, &mut context).unwrap();
+
+        assert_eq!(context.active_orders[&12321].shares, 225); // 400 - 175
+    }
+}

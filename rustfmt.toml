@@ -1,0 +1,31 @@
+# Rustfmt configuration for consistent code formatting
+
+# Basic formatting
+max_width = 100
+tab_spaces = 4
+edition = "2021"
+
+# Import formatting
+imports_granularity = "Crate"
+reorder_imports = true
+group_imports = "StdExternalCrate"
+
+# Function formatting
+fn_args_layout = "Tall"
+brace_style = "SameLineWhere"
+
+# Control flow
+control_brace_style = "AlwaysSameLine"
+match_arm_blocks = false
+
+# Comments and documentation
+format_code_in_doc_comments = true
+normalize_comments = true
+wrap_comments = true
+comment_width = 100
+
+# Misc
+use_field_init_shorthand = true
+use_try_shorthand = true
+force_explicit_abi = true
+remove_nested_parens = true

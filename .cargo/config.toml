@@ -1,0 +1,28 @@
+# Cargo configuration for improved builds and aliases
+
+[build]
+# Enable incremental compilation for faster debug builds
+incremental = true
+
+[target.x86_64-unknown-linux-musl]
+# For static Linux builds
+linker = "x86_64-linux-musl-gcc"
+
+[alias]
+# Convenient aliases for common tasks
+check-all = "check --all-targets --all-features"
+test-all = "test --all-features --workspace"
+clippy-all = "clippy --all-targets --all-features -- -D warnings"
+fmt-all = "fmt --all -- --check"
+build-release = "build --release --all-features"
+
+# Performance-focused aliases
+bench = "bench --all-features"
+flamegraph = "flamegraph --bin=lobsters"
+
+# Security and quality
+outdated = "outdated --workspace"
+
+[env]
+# Set RUST_BACKTRACE=1 for better error messages in development
+RUST_BACKTRACE = "1"

@@ -11,11 +11,11 @@ use super::{IntoOrderMessage, OrderMessage};
 pub struct CancelOrder {
     nanoseconds: u64,
     kind: char,
-    ticker: String,
+    pub(crate) ticker: String,
     side: Side,
     price: u32,
     shares: u32,
-    refno: u64,
+    pub(crate) refno: u64,
 }
 
 impl ReadMessage for CancelOrder {
@@ -68,5 +68,47 @@ impl IntoOrderMessage for CancelOrder {
             printable: None,
             execution_price: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::message::test_helpers::message_builders::*;
+    use crate::message::Side;
+
+    #[test]
+    fn returns_message_and_updates_shares_v50() {
+        let mut data = cancel_order_v50(0, 0, 10);
+        let mut context = Context::new();
+        context.update_clock(0);
+        context
+            .active_orders
+            .insert(0, create_order_state("A", Side::Buy, 0, 100));
+        let message = CancelOrder::read(&mut data, &Version::V50, &mut context).unwrap();
+        assert_eq!(*message.kind(), 'X');
+        assert_eq!(context.active_orders[&0].shares, 90);
+    }
+
+    #[test]
+    fn returns_message_and_updates_shares_v41() {
+        let mut data = cancel_order_v41(0, 0, 10);
+        let mut context = Context::new();
+        context.update_clock(0);
+        context
+            .active_orders
+            .insert(0, create_order_state("A", Side::Buy, 0, 100));
+        let message = CancelOrder::read(&mut data, &Version::V41, &mut context).unwrap();
+        assert_eq!(*message.kind(), 'X');
+        assert_eq!(context.active_orders[&0].shares, 90);
+    }
+
+    #[test]
+    #[should_panic(expected = "Order not found")]
+    fn panics_with_message() {
+        let mut data = cancel_order_v41(0, 0, 10);
+        let mut context = Context::new();
+        context.update_clock(0);
+        let _ = CancelOrder::read(&mut data, &Version::V41, &mut context).unwrap();
     }
 }
