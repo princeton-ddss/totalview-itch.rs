@@ -10,7 +10,7 @@ homepage = "https://github.com/princeton-ddss/lobste.rs"
 repository = "https://github.com/princeton-ddss/lobste.rs"
 keywords = ["finance", "market microstructure", "nasdaq", "high-frequency trading"]
 categories = ["finance", "parsing", "command-line-utilities"]
-rust-version = "1.70.0"
+rust-version = "1.84.0"
 
 [[bin]]
 name = "lobsters"

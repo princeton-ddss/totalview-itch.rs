@@ -110,7 +110,7 @@ jobs:
     - name: Install Rust toolchain (MSRV)
       uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: 1.74.0  # Adjust based on your MSRV
+        toolchain: 1.84.0  # Adjust based on your MSRV
 
     - name: Configure Rust cache
       uses: Swatinem/rust-cache@v2
