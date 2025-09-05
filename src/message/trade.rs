@@ -60,7 +60,7 @@ impl IntoTradeMessage for Trade {
             kind: self.kind,
             refno: self.refno,
             side: self.side,
-            shares: self.shares,
+            shares: self.shares as u64,
             ticker: self.ticker,
             price: self.price,
             matchno: self.matchno,

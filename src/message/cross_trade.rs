@@ -55,7 +55,7 @@ impl IntoTradeMessage for CrossTrade {
             kind: self.kind,
             refno: 0,        // Cross trades don't have reference numbers
             side: Side::Buy, // Cross trades don't have a specific side
-            shares: self.shares as u32,
+            shares: self.shares,
             ticker: self.ticker,
             price: self.cross_price,
             matchno: self.matchno,

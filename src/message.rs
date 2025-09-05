@@ -265,7 +265,7 @@ pub struct TradeMessage {
     kind: char, // P = non-cross, Q = cross, B = broken
     refno: u64,
     side: Side, // The type of non-display order on the book being matched (always "B" effective 07/14/2014)
-    shares: u32,
+    shares: u64,
     ticker: String,
     price: u32,
     matchno: u64,
