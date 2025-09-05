@@ -17,4 +17,4 @@ allow-expect-in-tests = true
 allow-unwrap-in-tests = true
 
 # Suppress overly pedantic lints for this domain
-msrv = "1.70.0"  # Minimum supported Rust version
+msrv = "1.84.0"  # Minimum supported Rust version
