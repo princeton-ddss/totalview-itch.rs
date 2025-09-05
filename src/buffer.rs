@@ -115,4 +115,19 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(buffile.reader.stream_position().unwrap(), 0);
     }
+
+    #[test]
+    fn peek_beyond_capacity() {
+        let file = assert_fs::NamedTempFile::new("test.txt").unwrap();
+        file.write_str("abcdefghijkl").unwrap(); // 12 bytes
+        let mut buffile = BufFile::with_capacity(4, file.path()).unwrap();
+
+        let res = buffile.peek(2, 7).unwrap();
+        assert_eq!(res, b"cdefghi");
+        assert_eq!(buffile.reader.stream_position().unwrap(), 0);
+
+        let res = buffile.peek(6, 5).unwrap();
+        assert_eq!(res, b"ghijk");
+        assert_eq!(buffile.reader.stream_position().unwrap(), 0);
+    }
 }
