@@ -206,7 +206,6 @@ impl OrderBook {
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
 

@@ -91,7 +91,6 @@ pub trait Peek: Read + Seek {
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
     use assert_fs::prelude::*;
