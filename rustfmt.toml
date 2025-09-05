@@ -28,5 +28,4 @@ comment_width = 100
 use_field_init_shorthand = true
 use_try_shorthand = true
 force_explicit_abi = true
-newline_style = "Unix"
 remove_nested_parens = true
