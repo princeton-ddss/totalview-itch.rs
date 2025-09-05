@@ -31,6 +31,10 @@ impl Flush for CSV {
             create_dir(&dirpath)?;
         }
 
+        if order_messages.is_empty() {
+            return Ok(());
+        }
+
         let date = order_messages[0].date().clone(); // Assume same date across all messages
         let filename = format!("{}.csv", date);
         let filepath = dirpath.join(filename);
@@ -127,6 +131,10 @@ impl Flush for CSV {
             create_dir(&dirpath)?;
         }
 
+        if trade_messages.is_empty() {
+            return Ok(());
+        }
+
         let date = trade_messages[0].date().clone(); // Assume same date across all messages
         let filename = format!("{}.csv", date);
         let filepath = dirpath.join(filename);
@@ -154,6 +162,10 @@ impl Flush for CSV {
         let dirpath = self.output_dir.join("noii_messages");
         if !dirpath.exists() {
             create_dir(&dirpath)?;
+        }
+
+        if noii_messages.is_empty() {
+            return Ok(());
         }
 
         let date = noii_messages[0].date().clone(); // Assume same date across all messages
