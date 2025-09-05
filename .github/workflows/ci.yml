@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -105,12 +105,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain (MSRV)
       uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: 1.70.0  # Adjust based on your MSRV
+        toolchain: 1.74.0  # Adjust based on your MSRV
 
     - name: Configure Rust cache
       uses: Swatinem/rust-cache@v2
@@ -124,7 +124,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
