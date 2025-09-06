@@ -8,7 +8,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/princeton-ddss/totalview-itch.rs"
 repository = "https://github.com/princeton-ddss/totalview-itch.rs"
-keywords = ["finance", "market microstructure", "nasdaq", "high-frequency trading"]
+keywords = ["finance", "nasdaq", "trading", "microstructure", "high-frequency"]
 categories = ["finance", "parsing", "command-line-utilities"]
 rust-version = "1.84.0"
 
