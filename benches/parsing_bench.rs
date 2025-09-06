@@ -3,7 +3,7 @@ use std::hint::black_box;
 
 // Uncomment these when you add actual benchmarks with test data
 // use std::collections::HashSet;
-// use lobsters::{Buffer, Reader, Version};
+// use tvi::{Buffer, Reader, Version};
 
 fn benchmark_message_parsing(c: &mut Criterion) {
     // This benchmark would require actual test data

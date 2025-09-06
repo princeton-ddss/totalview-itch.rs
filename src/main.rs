@@ -1,9 +1,5 @@
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
-use lobsters::{
-    message::{IntoNOIIMessage, IntoOrderMessage, IntoTradeMessage},
-    Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
-};
 use std::collections::HashSet;
 use std::fs;
 use std::io::{ErrorKind, Seek};
@@ -11,6 +7,10 @@ use std::path::Path;
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
+};
+use tvi::{
+    message::{IntoNOIIMessage, IntoOrderMessage, IntoTradeMessage},
+    Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
 };
 
 // TODO: Print error to std:err

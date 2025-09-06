@@ -18,7 +18,7 @@ build-release = "build --release --all-features"
 
 # Performance-focused aliases
 bench = "bench --all-features"
-flamegraph = "flamegraph --bin=lobsters"
+flamegraph = "flamegraph --bin=tvi"
 
 # Security and quality
 outdated = "outdated --workspace"

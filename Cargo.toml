@@ -1,23 +1,23 @@
 [package]
-name = "lobsters"
+name = "tvi"
 version = "0.1.0"
 edition = "2021"
 authors = ["Sangyoon Park (sangyoonpark@princeton.edu) and Colin Swaney (colinswaney@princeton.edu)"]
-description = "A 🔥fast🔥 parser for Historical TotalView-ITCH data"
+description = "A 🔥fast🔥 parser for historical TotalView-ITCH data"
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/princeton-ddss/lobste.rs"
-repository = "https://github.com/princeton-ddss/lobste.rs"
+homepage = "https://github.com/princeton-ddss/totalview-itch.rs"
+repository = "https://github.com/princeton-ddss/totalview-itch.rs"
 keywords = ["finance", "market microstructure", "nasdaq", "high-frequency trading"]
 categories = ["finance", "parsing", "command-line-utilities"]
 rust-version = "1.84.0"
 
 [[bin]]
-name = "lobsters"
+name = "tvi"
 path = "src/main.rs"
 
 [lib]
-name = "lobsters"
+name = "tvi"
 path = "src/lib.rs"
 
 [dependencies]
