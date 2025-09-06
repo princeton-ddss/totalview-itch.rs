@@ -1,6 +1,6 @@
 [package]
 name = "tvi"
-version = "0.1.0"
+version = "0.1.0-alpha"
 edition = "2021"
 authors = ["Sangyoon Park (sangyoonpark@princeton.edu) and Colin Swaney (colinswaney@princeton.edu)"]
 description = "A 🔥fast🔥 parser for historical TotalView-ITCH data"
