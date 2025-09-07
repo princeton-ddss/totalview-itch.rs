@@ -1,13 +1,16 @@
-use std::error::Error;
-use std::fs::{create_dir, create_dir_all, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::{
+    error::Error,
+    fs::{create_dir, create_dir_all, OpenOptions},
+    path::{Path, PathBuf},
+};
 
 use csv::WriterBuilder;
 
-use crate::message::{NOIIMessage, OrderMessage, TradeMessage};
-use crate::orderbook::OrderBookSnapshot;
-
 use super::Flush;
+use crate::{
+    message::{NOIIMessage, OrderMessage, TradeMessage},
+    orderbook::OrderBookSnapshot,
+};
 
 pub struct CSV {
     output_dir: PathBuf,
@@ -26,7 +29,7 @@ impl CSV {
 
 impl Flush for CSV {
     fn flush_order_messages(&self, order_messages: &[OrderMessage]) -> Result<(), Box<dyn Error>> {
-        let dirpath = self.output_dir.join("order_messages");
+        let dirpath = self.output_dir.join("orders");
         if !dirpath.exists() {
             create_dir(&dirpath)?;
         }
@@ -59,49 +62,36 @@ impl Flush for CSV {
     }
 
     fn flush_snapshots(&self, snapshots: &[OrderBookSnapshot]) -> Result<(), Box<dyn Error>> {
-        let dirpath = self.output_dir.join("snapshots");
+        let dirpath = self.output_dir.join("books");
         if !dirpath.exists() {
             create_dir(&dirpath)?;
         }
 
-        // Group snapshots by ticker
-        let mut ticker_snapshots: std::collections::HashMap<String, Vec<&OrderBookSnapshot>> =
-            std::collections::HashMap::new();
+        let date = snapshots[0].date.clone(); // Assume same date across all messages
+        let filename = format!("{}.csv", date);
+        let filepath = dirpath.join(filename);
+        let file_exists = filepath.exists();
 
-        for snapshot in snapshots {
-            ticker_snapshots
-                .entry(snapshot.ticker.clone())
-                .or_default()
-                .push(snapshot);
-        }
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(filepath)?;
 
-        // Write each ticker's snapshots to its own file
-        for (ticker, ticker_snaps) in ticker_snapshots {
-            let filename = format!("{}_snapshots.csv", ticker);
-            let filepath = dirpath.join(filename);
-            let file_exists = filepath.exists();
+        let mut writer = WriterBuilder::new()
+            .has_headers(false) // We'll write headers manually
+            .from_writer(file);
 
-            let file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(filepath)?;
-
-            let mut writer = WriterBuilder::new()
-                .has_headers(false) // We'll write headers manually
-                .from_writer(file);
-
+        if !snapshots.is_empty() {
             // Write headers if file is new
-            if !file_exists && !ticker_snaps.is_empty() {
-                let levels_count = ticker_snaps[0].levels.len() / 4; // levels per side
+            if !file_exists {
+                let levels_count = snapshots[0].data.len() / 4; // levels per side
                 let mut headers = vec!["ticker".to_string(), "timestamp".to_string()];
 
-                // Add bid headers
                 for i in 1..=levels_count {
                     headers.push(format!("bid_price_{}", i));
                     headers.push(format!("bid_size_{}", i));
                 }
 
-                // Add ask headers
                 for i in 1..=levels_count {
                     headers.push(format!("ask_price_{}", i));
                     headers.push(format!("ask_size_{}", i));
@@ -111,10 +101,10 @@ impl Flush for CSV {
             }
 
             // Write data rows
-            for snapshot in ticker_snaps {
+            for snapshot in snapshots {
                 let mut record = vec![snapshot.ticker.clone(), snapshot.timestamp.to_string()];
-                for level in &snapshot.levels {
-                    record.push(level.to_string());
+                for val in &snapshot.data {
+                    record.push(val.to_string());
                 }
                 writer.write_record(&record)?;
             }
@@ -126,7 +116,7 @@ impl Flush for CSV {
     }
 
     fn flush_trade_messages(&self, trade_messages: &[TradeMessage]) -> Result<(), Box<dyn Error>> {
-        let dirpath = self.output_dir.join("trade_messages");
+        let dirpath = self.output_dir.join("trades");
         if !dirpath.exists() {
             create_dir(&dirpath)?;
         }
@@ -159,7 +149,7 @@ impl Flush for CSV {
     }
 
     fn flush_noii_messages(&self, noii_messages: &[NOIIMessage]) -> Result<(), Box<dyn Error>> {
-        let dirpath = self.output_dir.join("noii_messages");
+        let dirpath = self.output_dir.join("noii");
         if !dirpath.exists() {
             create_dir(&dirpath)?;
         }

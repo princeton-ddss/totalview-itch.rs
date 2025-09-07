@@ -1,13 +1,13 @@
-use clap::Parser;
-use indicatif::{ProgressBar, ProgressStyle};
-use std::collections::HashSet;
-use std::fs;
-use std::io::{ErrorKind, Seek};
-use std::path::Path;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
+    fs,
+    io::{ErrorKind, Seek},
+    path::Path,
     time::{Duration, Instant},
 };
+
+use clap::Parser;
+use indicatif::{ProgressBar, ProgressStyle};
 use tvi::{
     message::{IntoNOIIMessage, IntoOrderMessage, IntoTradeMessage},
     Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
@@ -209,7 +209,10 @@ fn main() {
     for ticker in &tickers {
         if ticker != "*" {
             // Skip wildcard
-            order_books.insert(ticker.clone(), OrderBook::new(ticker.clone()));
+            order_books.insert(
+                ticker.clone(),
+                OrderBook::new(date.clone(), ticker.clone(), args.depth),
+            );
         }
     }
 
@@ -231,12 +234,17 @@ fn main() {
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
                             let order_book_start = Instant::now();
-                            order_book.add_order(*data.side(), *data.price(), *data.shares());
+                            order_book.add_order(
+                                *data.side(),
+                                *data.price(),
+                                *data.shares(),
+                                *data.nanoseconds(),
+                            );
                             metrics.duration.orderbook += order_book_start.elapsed();
 
                             // Create and write snapshot
                             let write_start = Instant::now();
-                            let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth); // Top 10 levels
+                            let snapshot = order_book.snapshot();
                             writer.write_snapshot(snapshot).unwrap();
                             metrics.duration.orderbook += write_start.elapsed();
                         }
@@ -251,16 +259,19 @@ fn main() {
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
                             let order_book_start = Instant::now();
-                            if let Err(e) =
-                                order_book.remove_order(*data.side(), *data.price(), *data.shares())
-                            {
+                            if let Err(e) = order_book.remove_order(
+                                *data.side(),
+                                *data.price(),
+                                *data.shares(),
+                                *data.nanoseconds(),
+                            ) {
                                 metrics.duration.orderbook += order_book_start.elapsed();
                                 eprintln!("Warning: Failed to cancel order: {}", e);
                             } else {
                                 metrics.duration.orderbook += order_book_start.elapsed();
                                 // Create and write snapshot only if update succeeded
                                 let write_start = Instant::now();
-                                let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
+                                let snapshot = order_book.snapshot();
                                 writer.write_snapshot(snapshot).unwrap();
                                 metrics.duration.serialization += write_start.elapsed();
                             }
@@ -276,16 +287,19 @@ fn main() {
                         // Update order book
                         if let Some(order_book) = order_books.get_mut(data.ticker()) {
                             let order_book_start = Instant::now();
-                            if let Err(e) =
-                                order_book.remove_order(*data.side(), *data.price(), *data.shares())
-                            {
+                            if let Err(e) = order_book.remove_order(
+                                *data.side(),
+                                *data.price(),
+                                *data.shares(),
+                                *data.nanoseconds(),
+                            ) {
                                 metrics.duration.orderbook += order_book_start.elapsed();
                                 eprintln!("Warning: Failed to delete order: {}", e);
                             } else {
                                 metrics.duration.orderbook += order_book_start.elapsed();
                                 // Create and write snapshot only if update succeeded
                                 let write_start = Instant::now();
-                                let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
+                                let snapshot = order_book.snapshot();
                                 writer.write_snapshot(snapshot).unwrap();
                                 metrics.duration.serialization += write_start.elapsed();
                             }
@@ -305,6 +319,7 @@ fn main() {
                                 *data.side(),
                                 *data.price(),
                                 *data.shares(),
+                                *data.nanoseconds(),
                             ) {
                                 metrics.duration.orderbook += order_book_start.elapsed();
                                 eprintln!("Warning: Failed to execute order: {}", e);
@@ -312,7 +327,7 @@ fn main() {
                                 metrics.duration.orderbook += order_book_start.elapsed();
                                 // Create and write snapshot only if update succeeded
                                 let write_start = Instant::now();
-                                let snapshot = order_book.snapshot(*data.nanoseconds(), args.depth);
+                                let snapshot = order_book.snapshot();
                                 writer.write_snapshot(snapshot).unwrap();
                                 metrics.duration.serialization += write_start.elapsed();
                             }
