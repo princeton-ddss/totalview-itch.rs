@@ -370,9 +370,7 @@ fn main() {
                 }
             }
             Err(e) => {
-                if e.kind() == ErrorKind::InvalidData
-                    && e.to_string().contains("File stream is complete")
-                {
+                if e.kind() == ErrorKind::UnexpectedEof {
                     break; // End of file reached
                 } else {
                     eprintln!("An error occurred: {}.", e);

@@ -1,6 +1,6 @@
 use std::{
     collections::{HashSet, VecDeque},
-    io::{Error, ErrorKind, Read, Result, Seek, SeekFrom},
+    io::{Read, Result, Seek, SeekFrom},
 };
 
 use crate::{
@@ -39,14 +39,7 @@ impl Reader {
         }
 
         loop {
-            let size = match read_size(buffer) {
-                Ok(s) => s,
-                Err(_) =>
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        "File stream is complete.",
-                    )),
-            };
+            let size = read_size(buffer)?;
             let kind = peek_kind(buffer)?;
 
             if kind == 'T' {
@@ -78,14 +71,7 @@ impl Reader {
                 Some(m) => return Ok(m),
                 None => {
                     buffer.seek(SeekFrom::Current(size as i64))?;
-                    match buffer.peek(0, 1) {
-                        Err(_) =>
-                            return Err(Error::new(
-                                ErrorKind::InvalidData,
-                                "File stream is complete.",
-                            )),
-                        Ok(_) => continue,
-                    }
+                    buffer.peek(0, 1)?;
                 }
             }
         }
