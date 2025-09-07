@@ -2,8 +2,9 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use getset::Getters;
 
-use super::{read_event_code, read_kind, read_nanoseconds};
-use super::{Context, EventCode, ReadMessage, Version};
+use super::{
+    read_event_code, read_kind, read_nanoseconds, Context, EventCode, ReadMessage, Version,
+};
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
@@ -38,8 +39,7 @@ impl ReadMessage for SystemEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::message::test_helpers::message_builders::*;
-    use crate::message::{OrderState, Side};
+    use crate::message::{test_helpers::message_builders::*, OrderState, Side};
 
     #[test]
     fn returns_start_messages_event_v50() {

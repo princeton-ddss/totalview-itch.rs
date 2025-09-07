@@ -2,9 +2,10 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use getset::Getters;
 
-use super::{read_kind, read_nanoseconds, read_refno};
-use super::{Context, ReadMessage, Side, Version};
-use super::{IntoOrderMessage, OrderMessage};
+use super::{
+    read_kind, read_nanoseconds, read_refno, Context, IntoOrderMessage, OrderMessage, ReadMessage,
+    Side, Version,
+};
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
@@ -98,8 +99,7 @@ impl IntoOrderMessage for DeleteOrder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::message::test_helpers::message_builders::*;
-    use crate::message::{OrderState, Side};
+    use crate::message::{test_helpers::message_builders::*, OrderState, Side};
 
     #[test]
     fn returns_message_and_removes_from_context_v50() {

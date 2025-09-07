@@ -4,10 +4,8 @@ use getset::Getters;
 
 use super::{
     read_kind, read_matchno, read_nanoseconds, read_price, read_refno, read_shares, read_side,
-    read_ticker,
+    read_ticker, Context, IntoTradeMessage, ReadMessage, Side, TradeMessage, Version,
 };
-use super::{Context, ReadMessage, Side, Version};
-use super::{IntoTradeMessage, TradeMessage};
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]

@@ -3,9 +3,10 @@ use std::io::{Read, Result, Seek, SeekFrom};
 use byteorder::{NetworkEndian, ReadBytesExt};
 use getset::Getters;
 
-use super::{read_kind, read_matchno, read_nanoseconds, read_price, read_ticker};
-use super::{Context, ReadMessage, Side, Version};
-use super::{IntoTradeMessage, TradeMessage};
+use super::{
+    read_kind, read_matchno, read_nanoseconds, read_price, read_ticker, Context, IntoTradeMessage,
+    ReadMessage, Side, TradeMessage, Version,
+};
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]

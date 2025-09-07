@@ -9,27 +9,27 @@ mod replace_order;
 mod system_event;
 mod trade;
 
-use std::collections::HashMap;
-use std::io::{Error, ErrorKind, Read, Result, Seek};
-
-use byteorder::{NetworkEndian, ReadBytesExt};
-use getset::Getters;
-use serde::Serialize;
-use strum_macros::Display;
-
-use crate::buffer::Peek;
+use std::{
+    collections::HashMap,
+    io::{Error, ErrorKind, Read, Result, Seek},
+};
 
 pub use add_order::AddOrder;
 pub use broken_trade::BrokenTrade;
+use byteorder::{NetworkEndian, ReadBytesExt};
 pub use cancel_order::CancelOrder;
 pub use cross_trade::CrossTrade;
 pub use delete_order::DeleteOrder;
 pub use execute_order::ExecuteOrder;
+use getset::Getters;
 pub use noii::NetOrderImbalanceIndicator;
+pub(crate) use replace_order::read_replace_order;
+use serde::Serialize;
+use strum_macros::Display;
 pub use system_event::SystemEvent;
 pub use trade::Trade;
 
-pub(crate) use replace_order::read_replace_order;
+use crate::buffer::Peek;
 
 #[derive(Debug)]
 pub enum Message {
@@ -81,7 +81,8 @@ pub(crate) struct OrderState {
 }
 
 pub(crate) struct Context {
-    pub(crate) clock: Option<u32>, // Tracks number of seconds past midnight (applicable for Version 4.1)
+    pub(crate) clock: Option<u32>, /* Tracks number of seconds past midnight (applicable for
+                                    * Version 4.1) */
     pub(crate) active_orders: HashMap<u64, OrderState>,
 }
 
@@ -256,7 +257,10 @@ pub trait IntoOrderMessage {
 }
 
 // Trade messages provide execution details for *non-displayable order types*.
-// A trade message is transmitted each time a non-displayble order is executed in whole or in part. Therefore, it is possible to receive multiple trade messages for the same order. Trade messages should be included in volume and market statistics, but they should not be included in order book reconstruction as non-displayable orders do not impact the order book.
+// A trade message is transmitted each time a non-displayble order is executed in whole or in part.
+// Therefore, it is possible to receive multiple trade messages for the same order. Trade messages
+// should be included in volume and market statistics, but they should not be included in order book
+// reconstruction as non-displayable orders do not impact the order book.
 #[derive(Debug, Getters, Serialize)]
 #[getset(get = "pub")]
 pub struct TradeMessage {
@@ -264,7 +268,8 @@ pub struct TradeMessage {
     nanoseconds: u64,
     kind: char, // P = non-cross, Q = cross, B = broken
     refno: u64,
-    side: Side, // The type of non-display order on the book being matched (always "B" effective 07/14/2014)
+    side: Side, /* The type of non-display order on the book being matched (always "B" effective
+                 * 07/14/2014) */
     shares: u64,
     ticker: String,
     price: u32,
@@ -277,10 +282,13 @@ pub trait IntoTradeMessage {
     fn into_trade_message(self, date: String) -> TradeMessage;
 }
 
-// NOII (net order imbalance indicator) messages indicate the imbalance between buy and sell orders leading up to crosses.
-// For the opening cross, NOII messages are disseminated every 5 seconds starting two minutes before the start of market hours.
-// For the closing cross, NOII messages are disseninated every 5 seconds starting ten minutes before the end of market hours.
-//  NOII messages are also disseminated every 5-seconds during the quote only period for IPO, halt, and imbalance crosses, starting approximately 5 seconds after the Stock Trading Action message with "Q" or "R" action value.
+// NOII (net order imbalance indicator) messages indicate the imbalance between buy and sell orders
+// leading up to crosses. For the opening cross, NOII messages are disseminated every 5 seconds
+// starting two minutes before the start of market hours. For the closing cross, NOII messages are
+// disseninated every 5 seconds starting ten minutes before the end of market hours.  NOII messages
+// are also disseminated every 5-seconds during the quote only period for IPO, halt, and imbalance
+// crosses, starting approximately 5 seconds after the Stock Trading Action message with "Q" or "R"
+// action value.
 #[derive(Debug, Getters, Serialize)]
 #[getset(get = "pub")]
 pub struct NOIIMessage {
@@ -304,8 +312,9 @@ pub trait IntoNOIIMessage {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use intx::U48;
+
+    use super::*;
 
     #[test]
     fn read_empty_buffer_errors() {

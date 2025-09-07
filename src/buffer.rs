@@ -1,6 +1,8 @@
-use std::fs::File;
-use std::io::{BufReader, Cursor, Read, Result, Seek, SeekFrom};
-use std::path::Path;
+use std::{
+    fs::File,
+    io::{BufReader, Cursor, Read, Result, Seek, SeekFrom},
+    path::Path,
+};
 
 pub struct Buffer {
     cursor: Cursor<Vec<u8>>,
@@ -92,8 +94,9 @@ pub trait Peek: Read + Seek {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use assert_fs::prelude::*;
+
+    use super::*;
 
     #[test]
     fn peek_a_bit() {
