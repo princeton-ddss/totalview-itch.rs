@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-REPO="USER/totalview-itch.rs"  # Replace with your actual GitHub username
+REPO="princeton-ddss/totalview-itch.rs"
 BINARY_NAME="tvi"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
