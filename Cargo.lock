@@ -1530,7 +1530,7 @@ dependencies = [
 
 [[package]]
 name = "tvi"
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 dependencies = [
  "arrow-array",
  "assert_fs",
