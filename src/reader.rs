@@ -1,14 +1,17 @@
-use std::collections::{HashSet, VecDeque};
-use std::io::{Error, ErrorKind, Read, Result, Seek, SeekFrom};
-
-use crate::buffer::Peek;
-use crate::constants::EVERY_TICKER;
-use crate::message::{peek_kind, peek_refno, peek_ticker, read_kind, read_seconds, read_size};
-use crate::message::{
-    read_replace_order, AddOrder, BrokenTrade, CancelOrder, CrossTrade, DeleteOrder, ExecuteOrder,
-    NetOrderImbalanceIndicator, SystemEvent, Trade,
+use std::{
+    collections::{HashSet, VecDeque},
+    io::{Read, Result, Seek, SeekFrom},
 };
-use crate::message::{Context, Message, ReadMessage, Version};
+
+use crate::{
+    buffer::Peek,
+    constants::EVERY_TICKER,
+    message::{
+        peek_kind, peek_refno, peek_ticker, read_kind, read_replace_order, read_seconds, read_size,
+        AddOrder, BrokenTrade, CancelOrder, Context, CrossTrade, DeleteOrder, ExecuteOrder,
+        Message, NetOrderImbalanceIndicator, ReadMessage, SystemEvent, Trade, Version,
+    },
+};
 
 pub struct Reader {
     version: Version,
@@ -36,15 +39,7 @@ impl Reader {
         }
 
         loop {
-            let size = match read_size(buffer) {
-                Ok(s) => s,
-                Err(_) => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        "File stream is complete.",
-                    ))
-                }
-            };
+            let size = read_size(buffer)?;
             let kind = peek_kind(buffer)?;
 
             if kind == 'T' {
@@ -76,15 +71,7 @@ impl Reader {
                 Some(m) => return Ok(m),
                 None => {
                     buffer.seek(SeekFrom::Current(size as i64))?;
-                    match buffer.peek(0, 1) {
-                        Err(_) => {
-                            return Err(Error::new(
-                                ErrorKind::InvalidData,
-                                "File stream is complete.",
-                            ))
-                        }
-                        Ok(_) => continue,
-                    }
+                    buffer.peek(0, 1)?;
                 }
             }
         }
@@ -228,11 +215,13 @@ impl Reader {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::buffer::BufFile;
-    use crate::message::test_helpers::message_builders::*;
-    use crate::message::Side;
     use assert_fs::{prelude::FileWriteBin, NamedTempFile};
+
+    use super::*;
+    use crate::{
+        buffer::BufFile,
+        message::{test_helpers::message_builders::*, Side},
+    };
 
     #[test]
     // extract_message returns an err if there are no more relevant messages

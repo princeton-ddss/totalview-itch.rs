@@ -2,10 +2,12 @@ mod csv;
 
 use std::error::Error;
 
-use crate::message::{NOIIMessage, OrderMessage, TradeMessage};
-use crate::orderbook::OrderBookSnapshot;
-
 pub use csv::CSV;
+
+use crate::{
+    message::{NOIIMessage, OrderMessage, TradeMessage},
+    orderbook::OrderBookSnapshot,
+};
 
 pub trait Flush {
     fn flush_order_messages(&self, order_messages: &[OrderMessage]) -> Result<(), Box<dyn Error>>;

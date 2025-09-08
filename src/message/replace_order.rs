@@ -1,7 +1,9 @@
 use std::io::{Read, Result, Seek, SeekFrom};
 
-use super::{read_kind, read_nanoseconds, read_price, read_refno, read_shares};
-use super::{AddOrder, Context, DeleteOrder, Version};
+use super::{
+    read_kind, read_nanoseconds, read_price, read_refno, read_shares, AddOrder, Context,
+    DeleteOrder, Version,
+};
 
 pub(crate) fn read_replace_order<T>(
     buffer: &mut T,
@@ -65,8 +67,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::message::test_helpers::message_builders::*;
-    use crate::message::{OrderState, Side};
+    use crate::message::{test_helpers::message_builders::*, OrderState, Side};
 
     #[test]
     fn returns_delete_and_add_orders_v50() {

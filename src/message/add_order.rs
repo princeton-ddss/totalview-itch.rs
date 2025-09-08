@@ -4,10 +4,8 @@ use getset::Getters;
 
 use super::{
     read_kind, read_mpid, read_nanoseconds, read_price, read_refno, read_shares, read_side,
-    read_ticker,
+    read_ticker, Context, IntoOrderMessage, OrderMessage, OrderState, ReadMessage, Side, Version,
 };
-use super::{Context, OrderState, ReadMessage, Side, Version};
-use super::{IntoOrderMessage, OrderMessage};
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
@@ -117,8 +115,7 @@ impl IntoOrderMessage for AddOrder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::message::test_helpers::message_builders::*;
-    use crate::message::Side;
+    use crate::message::{test_helpers::message_builders::*, Side};
 
     #[test]
     fn returns_message_and_updates_context_v50() {

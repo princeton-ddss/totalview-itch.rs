@@ -1,8 +1,10 @@
 #[cfg(test)]
 pub mod message_builders {
-    use crate::message::{OrderState, Side};
-    use byteorder::{NetworkEndian, WriteBytesExt};
     use std::io::Cursor;
+
+    use byteorder::{NetworkEndian, WriteBytesExt};
+
+    use crate::message::{OrderState, Side};
 
     // Timestamp helpers
     pub fn timestamp_v41(seconds: u32) -> Cursor<Vec<u8>> {

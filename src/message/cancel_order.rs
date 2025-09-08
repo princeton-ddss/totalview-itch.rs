@@ -2,9 +2,10 @@ use std::io::{Read, Result, Seek, SeekFrom};
 
 use getset::Getters;
 
-use super::{read_kind, read_nanoseconds, read_refno, read_shares};
-use super::{Context, ReadMessage, Side, Version};
-use super::{IntoOrderMessage, OrderMessage};
+use super::{
+    read_kind, read_nanoseconds, read_refno, read_shares, Context, IntoOrderMessage, OrderMessage,
+    ReadMessage, Side, Version,
+};
 
 #[derive(Debug, Getters)]
 #[getset(get = "pub")]
@@ -74,8 +75,7 @@ impl IntoOrderMessage for CancelOrder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::message::test_helpers::message_builders::*;
-    use crate::message::Side;
+    use crate::message::{test_helpers::message_builders::*, Side};
 
     #[test]
     fn returns_message_and_updates_shares_v50() {
