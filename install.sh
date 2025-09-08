@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 # Installation script for totalview-itch.rs NASDAQ ITCH parser
-# Usage: curl -sSL https://raw.githubusercontent.com/USER/totalview-itch.rs/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/USER/totalview-itch.rs/main/install.sh | sh
 
 set -e
 
@@ -74,7 +74,7 @@ install_binary() {
     
     # Determine file extension based on platform
     local file_extension
-    if [[ "$platform" == *"windows"* ]]; then
+    if [ "${platform#*windows}" != "$platform" ]; then
         file_extension="zip"
     else
         file_extension="tar.gz"
@@ -94,7 +94,7 @@ install_binary() {
     
     # Extract the binary
     log_info "Extracting binary..."
-    if [[ "$file_extension" == "zip" ]]; then
+    if [ "$file_extension" = "zip" ]; then
         unzip -q "${temp_dir}/${ASSET_PREFIX}.zip" -d "$temp_dir"
     else
         tar -xzf "${temp_dir}/${ASSET_PREFIX}.tar.gz" -C "$temp_dir"
@@ -104,7 +104,7 @@ install_binary() {
     chmod +x "${temp_dir}/${BINARY_NAME}"
     
     # Install to destination
-    if [[ -w "$INSTALL_DIR" ]]; then
+    if [ -w "$INSTALL_DIR" ]; then
         mv "${temp_dir}/${BINARY_NAME}" "${INSTALL_DIR}/"
     else
         log_info "Installing to ${INSTALL_DIR} (requires sudo)..."
@@ -142,7 +142,7 @@ main() {
     
     # Check dependencies
     local required_commands="curl"
-    if [[ "$platform" == *"windows"* ]]; then
+    if [ "${platform#*windows}" != "$platform" ]; then
         required_commands="$required_commands unzip"
     else
         required_commands="$required_commands tar"
@@ -158,7 +158,7 @@ main() {
     # Get latest version
     local version
     version=$(get_latest_version)
-    if [[ -z "$version" ]]; then
+    if [ -z "$version" ]; then
         log_error "Could not determine latest version"
         exit 1
     fi
