@@ -6,6 +6,7 @@ set -e
 
 # Configuration
 REPO="princeton-ddss/totalview-itch.rs"
+ASSET_PREFIX="totalview-itch-rs"
 BINARY_NAME="tvi"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
@@ -70,13 +71,22 @@ get_latest_version() {
 install_binary() {
     local version="$1"
     local platform="$2"
-    local download_url="https://github.com/${REPO}/releases/download/${version}/${BINARY_NAME}-${version}-${platform}.tar.gz"
+    
+    # Determine file extension based on platform
+    local file_extension
+    if [[ "$platform" == *"windows"* ]]; then
+        file_extension="zip"
+    else
+        file_extension="tar.gz"
+    fi
+    
+    local download_url="https://github.com/${REPO}/releases/download/${version}/${ASSET_PREFIX}-${platform}.${file_extension}"
     local temp_dir=$(mktemp -d)
     
-    log_info "Downloading ${BINARY_NAME} ${version} for ${platform}..."
+    log_info "Downloading ${ASSET_PREFIX} ${version} for ${platform}..."
     
     # Download the release
-    if ! curl -sL "$download_url" -o "${temp_dir}/${BINARY_NAME}.tar.gz"; then
+    if ! curl -sL "$download_url" -o "${temp_dir}/${ASSET_PREFIX}.${file_extension}"; then
         log_error "Failed to download from ${download_url}"
         log_info "Available releases: https://github.com/${REPO}/releases"
         exit 1
@@ -84,7 +94,11 @@ install_binary() {
     
     # Extract the binary
     log_info "Extracting binary..."
-    tar -xzf "${temp_dir}/${BINARY_NAME}.tar.gz" -C "$temp_dir"
+    if [[ "$file_extension" == "zip" ]]; then
+        unzip -q "${temp_dir}/${ASSET_PREFIX}.zip" -d "$temp_dir"
+    else
+        tar -xzf "${temp_dir}/${ASSET_PREFIX}.tar.gz" -C "$temp_dir"
+    fi
     
     # Make executable
     chmod +x "${temp_dir}/${BINARY_NAME}"
@@ -104,35 +118,42 @@ install_binary() {
 }
 
 # Verify installation
-verify_installation() {
-    if command -v "$BINARY_NAME" >/dev/null 2>&1; then
-        local installed_version
-        installed_version=$("$BINARY_NAME" --version 2>/dev/null | head -1 || echo "unknown")
-        log_success "Installation verified: ${installed_version}"
-        log_info "Try running: ${BINARY_NAME} --help"
-    else
-        log_warning "${BINARY_NAME} not found in PATH"
-        log_info "You may need to add ${INSTALL_DIR} to your PATH or restart your shell"
-    fi
-}
+# verify_installation() {
+#     if command -v "$BINARY_NAME" >/dev/null 2>&1; then
+#         local installed_version
+#         installed_version=$("$BINARY_NAME" --version 2>/dev/null | head -1 || echo "unknown")
+#         log_success "Installation verified: ${installed_version}"
+#         log_info "Try running: ${BINARY_NAME} --help"
+#     else
+#         log_warning "${BINARY_NAME} not found in PATH"
+#         log_info "You may need to add ${INSTALL_DIR} to your PATH or restart your shell"
+#     fi
+# }
 
 # Main installation flow
 main() {
-    echo "🦞 totalview-itch.rs NASDAQ ITCH Parser Installer"
-    echo "========================================"
-    
-    # Check dependencies
-    for cmd in curl tar; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            log_error "Required command not found: $cmd"
-            exit 1
-        fi
-    done
+    echo "totalview-itch.rs installer"
+    echo "==========================="
     
     # Detect platform
     local platform
     platform=$(detect_platform)
     log_info "Detected platform: ${platform}"
+    
+    # Check dependencies
+    local required_commands="curl"
+    if [[ "$platform" == *"windows"* ]]; then
+        required_commands="$required_commands unzip"
+    else
+        required_commands="$required_commands tar"
+    fi
+    
+    for cmd in $required_commands; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            log_error "Required command not found: $cmd"
+            exit 1
+        fi
+    done
     
     # Get latest version
     local version
@@ -147,7 +168,7 @@ main() {
     install_binary "$version" "$platform"
     
     # Verify
-    verify_installation
+    # verify_installation
     
     echo
     log_success "Installation complete! 🎉"
