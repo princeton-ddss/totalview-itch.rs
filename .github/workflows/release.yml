@@ -3,6 +3,7 @@ name: Build Release Binaries
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -64,15 +65,25 @@ jobs:
 
     - name: Upload Release Asset (Unix)
       if: matrix.os != 'windows-latest'
-      uses: softprops/action-gh-release@v1
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: ./totalview-itch-rs-${{ matrix.target }}.tar.gz
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./totalview-itch-rs-${{ matrix.target }}.tar.gz
+        asset_name: totalview-itch-rs-${{ matrix.target }}.tar.gz
+        asset_content_type: application/gzip
 
     - name: Upload Release Asset (Windows)
       if: matrix.os == 'windows-latest'
-      uses: softprops/action-gh-release@v1
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: ./totalview-itch-rs-${{ matrix.target }}.zip
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./totalview-itch-rs-${{ matrix.target }}.zip
+        asset_name: totalview-itch-rs-${{ matrix.target }}.zip
+        asset_content_type: application/zip
 
   publish-crate:
     name: Publish to crates.io
