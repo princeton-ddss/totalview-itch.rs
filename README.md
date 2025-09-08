@@ -4,7 +4,7 @@ A 🔥fast🔥 parser for historical TotalView-ITCH data.
 ## Description
 Nasdaq TotalView-ITCH (“TotalView”) is a data feed used by professional traders to maintain a real-time view of market conditions. TotalView disseminates all quote and order activity for securities traded on the Nasdaq exchange—several billion messages per day—allowing users to reconstruct the limit order book for any security up to arbitrary depth with nanosecond precision. It is a unique data source for financial economists and engineers examining topics such as information flows through lit exchanges, optimal trading strategies, and the development of macro-level indicators from micro-level signals (e.g., a market turbulence warning).
 
-While TotalView data is provided at no charge to academic researchers via the Historical TotalView-ITCH offering, the historical data offering uses a binary file specification that poses challenges for researchers. Lobste.rs is a pure Rust package developed to efficiently process and store historical data files for academic research purposes.
+While TotalView data is provided at no charge to academic researchers via the Historical TotalView-ITCH offering, the historical data offering uses a binary file specification that poses challenges for researchers. TotalView-ITCH.rs is a pure Rust package developed to efficiently process and store historical data files for academic research purposes.
 
 ## Getting Started
 
@@ -42,7 +42,7 @@ The processed data can be loaded using your favorite data processing tools, e.g.
 > the Apache Parquet format and use tools such as Apache Spark. -->
 
 ## Storage
-Lobste.rs aims to support a variety data storage options. We currently support writing to CSV and 
+Totalview-ITCH.rs aims to support a variety data storage options. We currently support writing to CSV and 
 aim to support Parquet and Postgres in the need future.
 
 ### CSV
@@ -150,7 +150,7 @@ Rows of the `trades` collection reflect two types of trades that are not capture
 
 
 ## Data Version Support
-`Lobste.rs` supports versions `4.1` and `5.0` of the TotalView-ITCH file
+`TotalView-ITCH.rs` supports versions `4.1` and `5.0` of the TotalView-ITCH file
 specificiation. The parser processes all message types required to reconstruct
 limit order books as well as several types that do not impact the order book.
 
