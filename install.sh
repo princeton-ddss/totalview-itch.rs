@@ -1,6 +1,6 @@
 #!/bin/sh
 # Installation script for totalview-itch.rs NASDAQ ITCH parser
-# Usage: curl -sSL https://raw.githubusercontent.com/USER/totalview-itch.rs/main/install.sh | sh
+# Usage: curl -sSL https://raw.githubusercontent.com/princeton-ddss/totalview-itch.rs/main/install.sh | sh
 
 set -e
 
