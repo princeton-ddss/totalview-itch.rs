@@ -1,6 +1,7 @@
 <!-- [![CI](https://github.com/princeton-ddss/totalview-itch.rs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/princeton-ddss/totalview-itch.rs/actions/workflows/ci.yml) -->
 [![Latest Version](https://img.shields.io/crates/v/tvi)](https://crates.io/crates/tvi)
 [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/princeton-ddss/blackfish/ci.yml)
 <!-- [![Coverage Status](https://coveralls.io/repos/github/princeton-ddss/totalview-itch.rs/badge.svg?branch=develop)](https://coveralls.io/github/princeton-ddss/totalview-itch.rs?branch=develop) -->
 
 
