@@ -56,14 +56,14 @@ impl IntoTradeMessage for Trade {
             date,
             nanoseconds: self.nanoseconds,
             kind: self.kind,
-            refno: self.refno,
-            side: self.side,
-            shares: self.shares as u64,
-            ticker: self.ticker,
-            price: self.price,
+            refno: Some(self.refno),
+            side: Some(self.side),
+            shares: Some(self.shares as u64),
+            ticker: Some(self.ticker),
+            price: Some(self.price),
             matchno: self.matchno,
-            cross_price: 0,  // Not applicable for regular trades
-            cross_type: ' ', // Not applicable for regular trades
+            cross_price: None,
+            cross_type: None,
         }
     }
 }

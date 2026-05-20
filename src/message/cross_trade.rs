@@ -5,7 +5,7 @@ use getset::Getters;
 
 use super::{
     read_kind, read_matchno, read_nanoseconds, read_price, read_ticker, Context, IntoTradeMessage,
-    ReadMessage, Side, TradeMessage, Version,
+    ReadMessage, TradeMessage, Version,
 };
 
 #[derive(Debug, Getters)]
@@ -54,14 +54,14 @@ impl IntoTradeMessage for CrossTrade {
             date,
             nanoseconds: self.nanoseconds,
             kind: self.kind,
-            refno: 0,        // Cross trades don't have reference numbers
-            side: Side::Buy, // Cross trades don't have a specific side
-            shares: self.shares,
-            ticker: self.ticker,
-            price: self.cross_price,
+            refno: None,
+            side: None,
+            shares: Some(self.shares),
+            ticker: Some(self.ticker),
+            price: None,
             matchno: self.matchno,
-            cross_price: self.cross_price,
-            cross_type: self.cross_type,
+            cross_price: Some(self.cross_price),
+            cross_type: Some(self.cross_type),
         }
     }
 }

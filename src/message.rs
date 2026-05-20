@@ -267,15 +267,15 @@ pub struct TradeMessage {
     date: String,
     nanoseconds: u64,
     kind: char, // P = non-cross, Q = cross, B = broken
-    refno: u64,
-    side: Side, /* The type of non-display order on the book being matched (always "B" effective
-                 * 07/14/2014) */
-    shares: u64,
-    ticker: String,
-    price: u32,
+    refno: Option<u64>,
+    side: Option<Side>, /* The type of non-display order on the book being matched (always "B"
+                         * effective 07/14/2014) */
+    shares: Option<u64>,
+    ticker: Option<String>,
+    price: Option<u32>,
     matchno: u64,
-    cross_price: u32,
-    cross_type: char,
+    cross_price: Option<u32>,
+    cross_type: Option<char>,
 }
 
 pub trait IntoTradeMessage {
@@ -397,6 +397,71 @@ mod tests {
         };
         context.active_orders.insert(1, order);
         assert!(context.has_order(1));
+    }
+
+    fn serialize_trade_message_to_csv(msg: &TradeMessage) -> String {
+        let mut wtr = csv::WriterBuilder::new()
+            .has_headers(false)
+            .from_writer(vec![]);
+        wtr.serialize(msg).unwrap();
+        String::from_utf8(wtr.into_inner().unwrap()).unwrap()
+    }
+
+    #[test]
+    fn trade_message_csv_serializes_non_cross() {
+        let msg = TradeMessage {
+            date: "2024-01-15".to_string(),
+            nanoseconds: 123,
+            kind: 'P',
+            refno: Some(42),
+            side: Some(Side::Buy),
+            shares: Some(100),
+            ticker: Some("AAPL".to_string()),
+            price: Some(1500000),
+            matchno: 7,
+            cross_price: None,
+            cross_type: None,
+        };
+        let csv = serialize_trade_message_to_csv(&msg);
+        assert_eq!(csv, "2024-01-15,123,P,42,B,100,AAPL,1500000,7,,\n");
+    }
+
+    #[test]
+    fn trade_message_csv_serializes_cross() {
+        let msg = TradeMessage {
+            date: "2024-01-15".to_string(),
+            nanoseconds: 123,
+            kind: 'Q',
+            refno: None,
+            side: None,
+            shares: Some(500),
+            ticker: Some("AAPL".to_string()),
+            price: None,
+            matchno: 7,
+            cross_price: Some(1500000),
+            cross_type: Some('O'),
+        };
+        let csv = serialize_trade_message_to_csv(&msg);
+        assert_eq!(csv, "2024-01-15,123,Q,,,500,AAPL,,7,1500000,O\n");
+    }
+
+    #[test]
+    fn trade_message_csv_serializes_broken() {
+        let msg = TradeMessage {
+            date: "2024-01-15".to_string(),
+            nanoseconds: 123,
+            kind: 'B',
+            refno: None,
+            side: None,
+            shares: None,
+            ticker: None,
+            price: None,
+            matchno: 7,
+            cross_price: None,
+            cross_type: None,
+        };
+        let csv = serialize_trade_message_to_csv(&msg);
+        assert_eq!(csv, "2024-01-15,123,B,,,,,,7,,\n");
     }
 }
 
