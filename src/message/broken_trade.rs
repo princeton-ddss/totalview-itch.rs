@@ -3,7 +3,7 @@ use std::io::{Read, Result, Seek, SeekFrom};
 use getset::Getters;
 
 use super::{
-    read_kind, read_matchno, read_nanoseconds, Context, IntoTradeMessage, ReadMessage, Side,
+    read_kind, read_matchno, read_nanoseconds, Context, IntoTradeMessage, ReadMessage,
     TradeMessage, Version,
 };
 
@@ -41,14 +41,14 @@ impl IntoTradeMessage for BrokenTrade {
             date,
             nanoseconds: self.nanoseconds,
             kind: self.kind,
-            refno: 0,               // Broken trades don't have reference numbers
-            side: Side::Buy,        // Broken trades don't have a specific side
-            shares: 0,              // Broken trades don't have shares
-            ticker: "".to_string(), // Broken trades don't specify ticker
-            price: 0,               // Broken trades don't have price
+            refno: None,
+            side: None,
+            shares: None,
+            ticker: None,
+            price: None,
             matchno: self.matchno,
-            cross_price: 0,
-            cross_type: ' ',
+            cross_price: None,
+            cross_type: None,
         }
     }
 }
