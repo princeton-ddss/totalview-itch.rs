@@ -65,7 +65,7 @@ impl OrderBook {
         let take = n.min(bids.len());
         bids.select_nth_unstable_by(take.saturating_sub(1), |a, b| b.0.cmp(&a.0));
         bids.truncate(take);
-        bids.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+        bids.sort_unstable_by_key(|b| std::cmp::Reverse(b.0));
         bids
     }
 
@@ -85,7 +85,7 @@ impl OrderBook {
         let take = n.min(asks.len());
         asks.select_nth_unstable_by(take.saturating_sub(1), |a, b| a.0.cmp(&b.0));
         asks.truncate(take);
-        asks.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+        asks.sort_unstable_by_key(|a| a.0);
         asks
     }
 
