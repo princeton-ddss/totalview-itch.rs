@@ -327,7 +327,78 @@ mod tests {
         );
     }
 
-    // NOTE: check_collisions / existing_csvs are filesystem-dependent (the
-    // partition-level wildcard vs per-ticker conflict rule). Covering them
-    // properly needs a tempdir fixture; tracked as a follow-up.
+    // --- Collision guard (filesystem-backed via tempdir) ---
+
+    use tempfile::TempDir;
+
+    const DATE: &str = "2017-02-27";
+
+    /// A CSV backend rooted at a fresh tempdir. The dir is removed when the
+    /// returned guard drops, so the tempdir must outlive the CSV.
+    fn temp_backend(wildcard: bool) -> (TempDir, CSV) {
+        let tmp = TempDir::new().unwrap();
+        let csv = CSV::new(tmp.path(), wildcard).unwrap();
+        (tmp, csv)
+    }
+
+    /// Create an empty output file for `stem` in `collection` under `date`.
+    fn touch(csv: &CSV, date: &str, stem: &str, collection: Collection) -> PathBuf {
+        let path = csv.path_to(date, stem, collection);
+        create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, "").unwrap();
+        path
+    }
+
+    #[test]
+    fn no_collision_when_partition_empty() {
+        let (_tmp, csv) = temp_backend(false);
+        assert!(csv.check_collisions(DATE, &["AAPL".to_string()]).is_empty());
+    }
+
+    #[test]
+    fn per_ticker_collides_only_with_named_tickers() {
+        let (_tmp, csv) = temp_backend(false);
+        let aapl = touch(&csv, DATE, "AAPL", Collection::Orders);
+        touch(&csv, DATE, "MSFT", Collection::Orders);
+
+        // Checking only AAPL must not flag MSFT — overwrite is surgical.
+        let hits = csv.check_collisions(DATE, &["AAPL".to_string()]);
+        assert_eq!(hits, vec![aapl]);
+    }
+
+    #[test]
+    fn per_ticker_collides_with_existing_all_file() {
+        // A per-ticker run into a partition already written by a wildcard run.
+        let (_tmp, csv) = temp_backend(false);
+        let all = touch(&csv, DATE, ALL_STEM, Collection::Orders);
+
+        let hits = csv.check_collisions(DATE, &["AAPL".to_string()]);
+        assert!(
+            hits.contains(&all),
+            "per-ticker run must conflict with _all.csv"
+        );
+    }
+
+    #[test]
+    fn wildcard_collides_with_existing_per_ticker_files() {
+        // The original gap: wildcard run into a partition with per-ticker files
+        // but no _all.csv. Must still detect the conflict.
+        let (_tmp, csv) = temp_backend(true);
+        let aapl = touch(&csv, DATE, "AAPL", Collection::Orders);
+        let msft = touch(&csv, DATE, "MSFT", Collection::Orders);
+
+        let hits = csv.check_collisions(DATE, &["*".to_string()]);
+        assert!(hits.contains(&aapl) && hits.contains(&msft));
+    }
+
+    #[test]
+    fn clear_collisions_removes_files() {
+        let (_tmp, csv) = temp_backend(false);
+        let aapl = touch(&csv, DATE, "AAPL", Collection::Orders);
+
+        let hits = csv.check_collisions(DATE, &["AAPL".to_string()]);
+        csv.clear_collisions(&hits).unwrap();
+        assert!(!aapl.exists());
+        assert!(csv.check_collisions(DATE, &["AAPL".to_string()]).is_empty());
+    }
 }
