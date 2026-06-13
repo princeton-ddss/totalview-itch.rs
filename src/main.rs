@@ -253,17 +253,9 @@ fn main() {
     // Set up metrics
     let mut metrics = PerformanceMetrics::new(filesize);
 
-    // Create order books for each ticker
+    // Order books are created lazily on first message for each ticker, so a `*`
+    // run produces books for every ticker rather than none (#16).
     let mut order_books: HashMap<String, OrderBook> = HashMap::new();
-    for ticker in &tickers {
-        if ticker != "*" {
-            // Skip wildcard
-            order_books.insert(
-                ticker.clone(),
-                OrderBook::new(date.clone(), ticker.clone(), args.depth),
-            );
-        }
-    }
 
     // Begin main loop...
     loop {
@@ -281,7 +273,12 @@ fn main() {
                     Message::AddOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             order_book.add_order(
                                 *data.side(),
@@ -306,7 +303,12 @@ fn main() {
                     Message::CancelOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             if let Err(e) = order_book.remove_order(
                                 *data.side(),
@@ -334,7 +336,12 @@ fn main() {
                     Message::DeleteOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             if let Err(e) = order_book.remove_order(
                                 *data.side(),
@@ -362,7 +369,12 @@ fn main() {
                     Message::ExecuteOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             if let Err(e) = order_book.execute_order(
                                 *data.side(),
