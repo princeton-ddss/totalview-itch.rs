@@ -267,7 +267,7 @@ fn main() {
             Ok(msg) => {
                 metrics.messages.total += 1;
                 metrics.duration.parsing += parse_start.elapsed();
-                pb.set_message(format!("{} messages", &metrics.messages.total));
+                pb.set_message(format!("{} messages", metrics.messages.total));
 
                 match msg {
                     Message::AddOrder(data) => {
@@ -442,7 +442,7 @@ fn main() {
     }
 
     metrics.duration.total += start.elapsed();
-    pb.finish_with_message(format!("✅ Processed {} messages", &metrics.messages.total));
+    pb.finish_with_message(format!("✅ Processed {} messages", metrics.messages.total));
     metrics.summarize();
 }
 
