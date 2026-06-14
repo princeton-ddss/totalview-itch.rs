@@ -129,7 +129,7 @@ impl<T: Flush> Writer<T> {
     }
 
     fn prune_order_messages(&mut self, threshold: usize) -> Result<(), Box<dyn Error>> {
-        for (_, vec) in self.order_messages.iter_mut() {
+        for vec in self.order_messages.values_mut() {
             if vec.len() >= threshold {
                 let n = vec.len();
                 self.backend.flush_order_messages(vec)?;
@@ -172,7 +172,7 @@ impl<T: Flush> Writer<T> {
     }
 
     fn prune_snapshots(&mut self, threshold: usize) -> Result<(), Box<dyn Error>> {
-        for (_, vec) in self.snapshots.iter_mut() {
+        for vec in self.snapshots.values_mut() {
             if vec.len() >= threshold {
                 let n = vec.len();
                 self.backend.flush_snapshots(vec)?;
@@ -219,7 +219,7 @@ impl<T: Flush> Writer<T> {
     }
 
     fn prune_trade_messages(&mut self, threshold: usize) -> Result<(), Box<dyn Error>> {
-        for (_, vec) in self.trade_messages.iter_mut() {
+        for vec in self.trade_messages.values_mut() {
             if vec.len() >= threshold {
                 let n = vec.len();
                 self.backend.flush_trade_messages(vec)?;
@@ -262,7 +262,7 @@ impl<T: Flush> Writer<T> {
     }
 
     fn prune_noii_messages(&mut self, threshold: usize) -> Result<(), Box<dyn Error>> {
-        for (_, vec) in self.noii_messages.iter_mut() {
+        for vec in self.noii_messages.values_mut() {
             if vec.len() >= threshold {
                 let n = vec.len();
                 self.backend.flush_noii_messages(vec)?;
