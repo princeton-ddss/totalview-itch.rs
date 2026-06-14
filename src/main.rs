@@ -9,12 +9,16 @@ use std::{
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use tvi::{
+    constants::EVERY_TICKER,
     message::{IntoNOIIMessage, IntoOrderMessage, IntoTradeMessage},
     Buffer, Message, OrderBook, Reader, Version, Writer, CSV,
 };
 
 // TODO: Print error to std:err
 // TODO: handle panics
+
+const MAX_BUFFERED_FACTOR: usize = 64;
+const MIN_FLUSH_DIVISOR: usize = 4;
 
 struct PerformanceMetrics {
     file_size: u64,
@@ -135,9 +139,16 @@ struct Cli {
         short,
         long,
         default_value_t = 1028,
-        help = "The size of internal buffer used for writing data."
+        help = "The per-ticker buffer size (messages) before a ticker is flushed."
     )]
     capacity: usize,
+
+    #[arg(
+        short,
+        long,
+        help = "Overwrite existing output files instead of erroring on collision."
+    )]
+    overwrite: bool,
 }
 
 fn parse_filename<P: AsRef<Path>>(path: P) -> Option<(String, Version)> {
@@ -184,11 +195,49 @@ fn main() {
         "The filename should match the format 'SMMDDYY-vNN' where 'NN' is one of '41' or '50'.",
     );
 
-    // Set up reader and writer
+    // `*` means "all tickers" and subsumes any specific ticker, so combining the
+    // two is incoherent. Reject it rather than silently treating it as plain `*`.
+    if tickers.contains(EVERY_TICKER) && tickers.len() > 1 {
+        eprintln!("Error: '*' (all tickers) cannot be combined with specific tickers.");
+        std::process::exit(1);
+    }
+
+    // Set up reader and writer. Under `*`, output collapses into a single combined
+    // `_all.csv` per collection rather than one file per ticker. The check above
+    // guarantees wildcard implies the ticker set is exactly {"*"}.
+    let wildcard = tickers.contains(EVERY_TICKER);
     let mut buffer = Buffer::new(&args.path).unwrap();
     let mut reader = Reader::new(version, tickers.clone());
-    let backend = CSV::new("data").unwrap();
-    let mut writer = Writer::new(backend, args.capacity);
+    let backend = CSV::new("data", wildcard).unwrap();
+
+    // Refuse to clobber existing output unless --overwrite is set. The resolved
+    // ticker list is known up front; under `*` the guard checks the combined
+    // `_all.csv` files. On overwrite, delete the collisions before parsing so
+    // the append-mode flushes start from a clean file.
+    let mut ticker_list: Vec<String> = tickers.iter().cloned().collect();
+    ticker_list.sort();
+    let collisions = backend.check_collisions(&date, &ticker_list);
+    if !collisions.is_empty() {
+        if !args.overwrite {
+            eprintln!("Refusing to overwrite existing output (pass --overwrite to replace):");
+            for path in &collisions {
+                eprintln!("  {}", path.display());
+            }
+            std::process::exit(1);
+        }
+        backend
+            .clear_collisions(&collisions)
+            .expect("Failed to clear existing output files.");
+    }
+    let max_buffered = args.capacity * MAX_BUFFERED_FACTOR;
+    let min_flush_size = args.capacity / MIN_FLUSH_DIVISOR;
+    let mut writer = Writer::new(
+        backend,
+        args.capacity,
+        max_buffered,
+        min_flush_size,
+        wildcard,
+    );
 
     // Set up progress bar
     let filesize = fs::metadata(&args.path).unwrap().len();
@@ -204,17 +253,9 @@ fn main() {
     // Set up metrics
     let mut metrics = PerformanceMetrics::new(filesize);
 
-    // Create order books for each ticker
+    // Order books are created lazily on first message for each ticker, so a `*`
+    // run produces books for every ticker rather than none (#16).
     let mut order_books: HashMap<String, OrderBook> = HashMap::new();
-    for ticker in &tickers {
-        if ticker != "*" {
-            // Skip wildcard
-            order_books.insert(
-                ticker.clone(),
-                OrderBook::new(date.clone(), ticker.clone(), args.depth),
-            );
-        }
-    }
 
     // Begin main loop...
     loop {
@@ -226,13 +267,18 @@ fn main() {
             Ok(msg) => {
                 metrics.messages.total += 1;
                 metrics.duration.parsing += parse_start.elapsed();
-                pb.set_message(format!("{} messages", &metrics.messages.total));
+                pb.set_message(format!("{} messages", metrics.messages.total));
 
                 match msg {
                     Message::AddOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             order_book.add_order(
                                 *data.side(),
@@ -257,7 +303,12 @@ fn main() {
                     Message::CancelOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             if let Err(e) = order_book.remove_order(
                                 *data.side(),
@@ -285,7 +336,12 @@ fn main() {
                     Message::DeleteOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             if let Err(e) = order_book.remove_order(
                                 *data.side(),
@@ -313,7 +369,12 @@ fn main() {
                     Message::ExecuteOrder(data) => {
                         metrics.messages.orders += 1;
                         // Update order book
-                        if let Some(order_book) = order_books.get_mut(data.ticker()) {
+                        {
+                            let order_book = order_books
+                                .entry(data.ticker().to_string())
+                                .or_insert_with(|| {
+                                    OrderBook::new(date.clone(), data.ticker().clone(), args.depth)
+                                });
                             let order_book_start = Instant::now();
                             if let Err(e) = order_book.execute_order(
                                 *data.side(),
@@ -381,7 +442,7 @@ fn main() {
     }
 
     metrics.duration.total += start.elapsed();
-    pb.finish_with_message(format!("✅ Processed {} messages", &metrics.messages.total));
+    pb.finish_with_message(format!("✅ Processed {} messages", metrics.messages.total));
     metrics.summarize();
 }
 

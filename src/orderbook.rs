@@ -3,13 +3,17 @@ use std::{
     io::{Error, ErrorKind, Result},
 };
 
+use getset::Getters;
+
 use serde::Serialize;
 
 use crate::message::Side;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Getters, Serialize)]
 pub struct OrderBookSnapshot {
+    #[getset(get = "pub")]
     pub date: String,
+    #[getset(get = "pub")]
     pub ticker: String,
     pub timestamp: u64,
     pub data: Vec<i64>, /* [bid_price_1, bid_size_1, bid_price_2, bid_size_2, ..., ask_price_1,

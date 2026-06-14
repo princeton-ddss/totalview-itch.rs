@@ -40,6 +40,14 @@ list:
 ```shell
 tvi data/S031413-v41.txt --tickers AAPL,MSFT --depth 3
 ```
+Omitting `--tickers` (or passing `*`) processes every ticker in the file. In that
+case `*` cannot be combined with specific tickers, and output is written to a single
+combined `_all.csv` per collection rather than one file per ticker.
+
+By default `tvi` refuses to overwrite existing output and exits with an error listing
+the conflicting files. Pass `--overwrite` to replace them; overwriting is per-file, so
+`--tickers AAPL --overwrite` replaces only `AAPL`'s files and leaves other tickers intact.
+
 Processing of multiple files (i.e., dates) can be performed using multiple processes or multiple
 jobs on a high-performance computing cluster.
 
@@ -54,20 +62,23 @@ Totalview-ITCH.rs aims to support a variety data storage options. We currently s
 aim to support Parquet and Postgres in the need future.
 
 ### CSV
-The default writer stores data in CSV format. Output has the following directory structure:
+The default writer stores data in CSV format under `./data`, partitioned by
+collection, date, and ticker:
 ```
-test
-|- messages
-   |- date=2013-03-14
-      |- partition.csv
-   |- date=2013-03-15
-      |- partition.csv
-|- orderbooks
+data
+|- orders
+   |- 2013-03-14
+      |- AAPL.csv
+      |- MSFT.csv
+   |- 2013-03-15
+      |- AAPL.csv
+|- books
 |- noii
 |- trades
 ```
-This structure is convenient for parallelizing analyses performed at the
-ticker-date level. 
+Each file holds one ticker for one date. When all tickers are processed (`*`), each
+collection's date directory holds a single combined `_all.csv` instead. This structure
+is convenient for parallelizing analyses performed at the ticker-date level.
 
 ### Postgres
 Under construction 🚧
@@ -78,8 +89,8 @@ Under construction 🚧
 ## Data
 The default parsing method creates four tables/collections:
 
-- `messages`: messages that reflect order book updates,
-- `orderbooks`: order book snapshots following each message, 
+- `orders`: messages that reflect order book updates,
+- `books`: order book snapshots following each message, 
 - `noii`: net order imbalance indicator messages, 
 - `trades`: messages that indicate trades involving non-displayed orders, 
 
@@ -125,7 +136,7 @@ Each row the `orderbooks` table represents a snapshot of the order book associat
 | ask_shares_`n` | `u32`     | The offer volume at the `n`-th best ask (`N=1,..., N`).         | ✓           | `None`    |
 
 ### `noii`
-Net Order Imbalance Indicator (NOII) messages are disseminated prior to market open and close as well as during quote only periods. The `noii` collection stores these messages for all tickers in a single file for each date.
+Net Order Imbalance Indicator (NOII) messages are disseminated prior to market open and close as well as during quote only periods. The `noii` collection stores these messages per ticker and date, following the same layout as the other collections.
 
 | Field             | Type     | Description                                                     | Required? | Default   |
 | ----------------- | -------- | --------------------------------------------------------------- | :-------: | :-------: |

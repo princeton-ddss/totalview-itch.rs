@@ -241,6 +241,7 @@ pub struct OrderMessage {
     date: String,
     nanoseconds: u64,
     kind: char,
+    #[getset(get = "pub")]
     ticker: String,
     side: Side,
     price: u32,
