@@ -121,7 +121,7 @@ impl<T: Flush> Writer<T> {
         }
 
         if self.order_buffered > self.max_buffered {
-            // We have too many messages overall => let's clean up a bit
+            // We still have too many messages overall => flush everything
             self.prune_order_messages(0)?;
         }
 
@@ -164,7 +164,7 @@ impl<T: Flush> Writer<T> {
         }
 
         if self.snapshots_buffered > self.max_buffered {
-            // We have too many snapshots overall => let's clean up a bit
+            // We still have too many snapshots overall => flush everything
             self.prune_snapshots(0)?;
         }
 
@@ -211,7 +211,7 @@ impl<T: Flush> Writer<T> {
         }
 
         if self.trade_buffered > self.max_buffered {
-            // We have too many messages overall => let's clean up a bit
+            // We still have too many messages overall => flush everything
             self.prune_trade_messages(0)?;
         }
 
@@ -254,7 +254,7 @@ impl<T: Flush> Writer<T> {
         }
 
         if self.noii_buffered > self.max_buffered {
-            // We have too many messages overall => let's clean up a bit
+            // We still have too many messages overall => flush everything
             self.prune_noii_messages(0)?;
         }
 
