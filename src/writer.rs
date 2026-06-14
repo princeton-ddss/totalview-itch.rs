@@ -39,6 +39,9 @@ pub struct Writer<T: Flush> {
 /// Buffer key and filename stem for the combined output under the `*` wildcard.
 pub(crate) const ALL_STEM: &str = "_all";
 
+/// Stem for trades with no ticker (broken trades).
+pub(crate) const UNKNOWN_STEM: &str = "_unknown";
+
 impl<T: Flush> Writer<T> {
     pub fn new(
         backend: T,
@@ -185,7 +188,8 @@ impl<T: Flush> Writer<T> {
         &mut self,
         trade_message: TradeMessage,
     ) -> Result<(), Box<dyn Error>> {
-        let key = self.bucket_key(trade_message.ticker());
+        let ticker = trade_message.ticker().as_deref().unwrap_or(UNKNOWN_STEM);
+        let key = self.bucket_key(ticker);
         let messages = self.trade_messages.entry(key).or_default();
 
         // Push order message

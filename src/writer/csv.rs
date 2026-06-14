@@ -6,7 +6,7 @@ use std::{
 
 use csv::WriterBuilder;
 
-use super::{Flush, ALL_STEM};
+use super::{Flush, ALL_STEM, UNKNOWN_STEM};
 use crate::{
     message::{NOIIMessage, OrderMessage, TradeMessage},
     orderbook::OrderBookSnapshot,
@@ -228,8 +228,12 @@ impl Flush for CSV {
         }
 
         // Assume same date and ticker across all messages (one ticker per flush).
+        // Broken trades carry no ticker; they file under `_unknown`.
         let date = trade_messages[0].date();
-        let ticker = trade_messages[0].ticker();
+        let ticker = trade_messages[0]
+            .ticker()
+            .as_deref()
+            .unwrap_or(UNKNOWN_STEM);
 
         let (file, file_exists) = self.open_for(date, ticker, Collection::Trades)?;
         let mut writer = WriterBuilder::new()
